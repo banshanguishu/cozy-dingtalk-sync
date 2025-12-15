@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify 订单同步工具</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        #startBtn {
+            background-color: #008060; /* Shopify Green */
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #startBtn:hover {
+            background-color: #004c3f;
+            transform: translateY(-2px);
+        }
+
+        #startBtn:active {
+            transform: translateY(0);
+        }
+
+        #startBtn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-box {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        #logWindow {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 20px;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 14px;
+            border: 1px solid #333;
+        }
+
+        .log-line {
+            margin: 2px 0;
+        }
+
+        .log-error {
+            color: #ff6b6b;
+        }
+
+        .log-success {
+            color: #51cf66;
+        }
+
+        .status-indicator {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Shopify 订单同步助手</h1>
+        
+        <button id="startBtn">开始同步</button>
+
+        <div class="status-box">
+            <div class="status-indicator">运行日志：</div>
+            <div id="logWindow">等待开始...</div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const startBtn = document.getElementById('startBtn');
+        const logWindow = document.getElementById('logWindow');
+        let isRunning = false;
+
+        // 自动滚动到底部
+        function scrollToBottom() {
+            logWindow.scrollTop = logWindow.scrollHeight;
+        }
+
+        // 添加日志
+        function appendLog(message, type = 'normal') {
+            const line = document.createElement('div');
+            line.classList.add('log-line');
+            if (type === 'error') line.classList.add('log-error');
+            if (type === 'success') line.classList.add('log-success');
+            line.textContent = message;
+            logWindow.appendChild(line);
+            scrollToBottom();
+        }
+
+        // 按钮点击事件
+        startBtn.addEventListener('click', () => {
+            if (isRunning) return;
+            
+            startBtn.disabled = true;
+            startBtn.textContent = "同步进行中...";
+            logWindow.innerHTML = ''; // 清空日志
+            appendLog("🚀 发送启动指令...", 'success');
+            
+            socket.emit('start-sync');
+        });
+
+        // 监听日志事件
+        socket.on('log', (data) => {
+            appendLog(data);
+        });
+
+        socket.on('error-log', (data) => {
+            appendLog(data, 'error');
+        });
+
+        // 监听结束事件
+        socket.on('process-exit', (code) => {
+            isRunning = false;
+            startBtn.disabled = false;
+            startBtn.textContent = "开始同步";
+            
+            if (code === 0) {
+                appendLog(`\n✅ 同步任务完成 (退出码: ${code})`, 'success');
+            } else {
+                appendLog(`\n❌ 同步任务异常结束 (退出码: ${code})`, 'error');
+            }
+        });
+
+        // 监听状态
+        socket.on('status', (status) => {
+            if (status === 'running') {
+                isRunning = true;
+                startBtn.disabled = true;
+                startBtn.textContent = "同步进行中...";
+            }
+        });
+
+    </script>
+</body>
+</html>

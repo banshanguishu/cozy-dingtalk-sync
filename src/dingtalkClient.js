@@ -1,0 +1,63 @@
+const axios = require("axios");
+require("dotenv").config();
+
+const { DINGTALK_WEBHOOK_URL } = process.env;
+
+/**
+ * 将单个订单推送到钉钉
+ * @param {Object} order - Shopify 订单数据
+ */
+async function pushOrderToDingTalk(order) {
+  if (!DINGTALK_WEBHOOK_URL) {
+    console.warn("⚠️ 未配置 DINGTALK_WEBHOOK_URL，跳过钉钉同步。");
+    return false;
+  }
+
+  try {
+    const response = await axios.post(DINGTALK_WEBHOOK_URL, order, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    // 钉钉接口通常返回 200，即使业务逻辑有误也可能返回 200，需根据实际情况判断
+    // 这里假设 HTTP 200 即为成功
+    console.log(`[DingTalk] ✅ 订单 ${order.thirdName || order.parentName} 同步成功`);
+    return true;
+  } catch (error) {
+    console.error(`[DingTalk] ❌ 订单 ${order.name} 同步失败:`, error.message);
+    if (error.response) {
+      console.error("响应详情:", JSON.stringify(error.response.data));
+    }
+    return false;
+  }
+}
+
+/**
+ * 批量同步订单到钉钉
+ * @param {Array} orders - 订单数组
+ */
+async function syncOrdersToDingTalk(orders) {
+  console.log(`开始同步 ${orders.length} 个订单到钉钉...`);
+
+  let successCount = 0;
+  let failCount = 0;
+
+  // 串行发送，避免触发限流
+  for (const order of orders) {
+    const success = await pushOrderToDingTalk(order);
+    if (success) {
+      successCount++;
+    } else {
+      failCount++;
+    }
+    // 简单的延时，防止请求过快 (可选)
+    // await new Promise(resolve => setTimeout(resolve, 200));
+  }
+
+  console.log(`\n钉钉同步完成: ✅ ${successCount}, ❌ ${failCount}`);
+  return { successCount, failCount };
+}
+
+module.exports = {
+  syncOrdersToDingTalk,
+};
+

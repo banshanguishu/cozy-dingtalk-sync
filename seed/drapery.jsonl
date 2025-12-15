@@ -1,0 +1,22 @@
+{
+    "devTypeId": "string",
+    "parentId": "string",
+    "parentName": "string",
+    "thirdId": "string",
+    "thirdName": "string",
+    "createdAt": "string",
+    "updatedAt": "string",
+    "quantity": "number",
+    "collection": "string",
+    "color": "string",
+    "width": "number",
+    "length": "number",
+    "header": "string",
+    "liner": "string",
+    "ringColor": "string",
+    "tieBack": "string",
+    "memoryShape": "string",
+    "roomDescription": "string",
+    "trimColor": "string",
+    "source": "string"
+}
