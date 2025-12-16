@@ -7,7 +7,7 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6677800649022";
+const ORDER_ID = "gid://shopify/Order/6676300136766";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 

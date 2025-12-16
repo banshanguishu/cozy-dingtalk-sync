@@ -14,7 +14,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 3000;
+const START_PORT = 3000;
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
@@ -81,17 +81,36 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, async () => {
-    console.log(`🌐 服务已启动: http://localhost:${PORT}`);
-    console.log('🚀 正在自动打开浏览器...');
-    
-    // 自动打开浏览器 (确保 open 模块已加载)
-    if (open) {
-        await open(`http://localhost:${PORT}`);
-    } else {
-        // 如果 open 还没加载完，稍等一下再试
-        setTimeout(async () => {
-             if (open) await open(`http://localhost:${PORT}`);
-        }, 1000);
-    }
-});
+/**
+ * 启动服务器，如果端口被占用则自动 +1 重试
+ * @param {number} port 
+ */
+function startServer(port) {
+    server.listen(port, async () => {
+        console.log(`🌐 服务已启动: http://localhost:${port}`);
+        console.log('🚀 正在自动打开浏览器...');
+        
+        // 自动打开浏览器 (确保 open 模块已加载)
+        const openUrl = `http://localhost:${port}`;
+        if (open) {
+            await open(openUrl);
+        } else {
+            // 如果 open 还没加载完，稍等一下再试
+            setTimeout(async () => {
+                 if (open) await open(openUrl);
+            }, 1000);
+        }
+    });
+
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️ 端口 ${port} 被占用，尝试端口 ${port + 1}...`);
+            startServer(port + 1);
+        } else {
+            console.error('❌ 服务器启动失败:', err);
+        }
+    });
+}
+
+// 开始尝试启动
+startServer(START_PORT);

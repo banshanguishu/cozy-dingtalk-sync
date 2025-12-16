@@ -100,4 +100,3 @@ async function run(type) {
 }
 
 run("drapery")
-

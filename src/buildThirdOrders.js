@@ -12,7 +12,32 @@ const DateHandler = (date = "") => {
   return date;
 };
 
-/* 根据不同 */
+/* 尺寸数值计算：支持空串、整数、小数、分数 */
+const calculateDimension = (val1 = "", val2 = "") => {
+  const parse = (v) => {
+    if (!v) return 0;
+    const str = String(v).trim();
+    if (!str) return 0;
+
+    // 1. 尝试直接转换为数字 (处理 "12", "10.5")
+    const num = Number(str);
+    if (!isNaN(num)) return num;
+
+    // 2. 处理分数形式 (处理 "1/2")
+    if (str.includes("/")) {
+      const [numerator, denominator] = str.split("/").map(Number);
+      if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+        return numerator / denominator;
+      }
+    }
+
+    return 0;
+  };
+
+  // 两个值相加，并处理浮点数精度问题 (保留4位小数以防万一)
+  const result = parse(val1) + parse(val2);
+  return Math.round(result * 10) / 10;
+};
 
 /* 根据原始订单数据构造三级订单对象数组 */
 const buildThirdOrders = (orders, type) => {
@@ -60,12 +85,12 @@ const buildThirdOrders = (orders, type) => {
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
           quantity: node.quantity, // 商品数量
           collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title), // collection name
-          color: customAttributes["Trim Color"] || node.variantTitle || "",
-          width: Number(customAttributes["Single Panel Order Width (inch)"] || 0) + Number(customAttributes["Width Fraction (optional)"] || 0),
-          length: Number(customAttributes["Single Panel Order Length (inch)"] || 0) + Number(customAttributes["Length Fraction (optional)"] || 0),
+          color: customAttributes["Color"] || node.variantTitle || "",
+          width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
+          length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
           header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "",
           liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
-          ringColor: customAttributes["Rings Color"] || "",
+          ringColor: customAttributes["Rings"] || "",
           tieBack: customAttributes["Tieback"] || "",
           memoryShape: customAttributes["Memory Shape"] || "no memory shape",
           roomDescription: customAttributes["Room Description (Optional)"] || "",
