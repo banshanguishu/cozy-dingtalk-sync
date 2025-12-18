@@ -83,18 +83,18 @@ const buildThirdOrders = (orders, type) => {
           thirdName: parentName + targetTypeSuffix + (currentOrders.length + 1), // 三级订单号
           createdAt: DateHandler(o.createdAt), // 订单创建时间
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
-          quantity: node.quantity, // 商品数量
-          collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title), // collection name
-          color: customAttributes["Color"] || node.variantTitle || "",
+          quantity: node.quantity || 0, // 商品数量
+          collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
+          color: customAttributes["Color"] || node.variantTitle || "/",
           width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
           length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
-          header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "",
+          header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
           liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
-          ringColor: customAttributes["Rings"] || "",
+          ringColor: customAttributes["Rings"] || "NA",
           tieBack: customAttributes["Tieback"] || "",
           memoryShape: customAttributes["Memory Shape"] || "no memory shape",
-          roomDescription: customAttributes["Room Description (Optional)"] || "",
-          trimColor: customAttributes["Trim Color"] || "",
+          roomDescription: customAttributes["Room Description (Optional)"] || "/",
+          trimColor: customAttributes["Trim Color"] || "/",
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
 

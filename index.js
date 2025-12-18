@@ -57,10 +57,15 @@ async function run(type) {
         break;
       }
 
-      console.log(`📥 ${type} 第 ${pageCount} 页获取到 ${originOrders.length} 个订单，pageInfo为：${JSON.stringify(pageInfo)}`);
+      // console.log(`📥 ${type} 第 ${pageCount} 页获取到 ${originOrders.length} 个订单，pageInfo为：${JSON.stringify(pageInfo)}`);
 
       // 组装数据为对应type多维表所需要格式(细化到三级)
       const thirdOrders = buildThirdOrders(originOrders, type)
+
+      if (thirdOrders.length === 0) {
+        console.log("✅ 没有更多三级单号新订单需要同步。");
+        break;
+      }
 
       // 3. 推送到钉钉
       await syncOrdersToDingTalk(thirdOrders);

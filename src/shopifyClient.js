@@ -140,7 +140,7 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, type) {
   const apiUrl = getApiUrl();
 
   // TODO: 构造查询条件: created_at >= lastSyncTime，注意: >= 可能会包含上一批最后一条，后续需在内存去重
-  const queryFilter = `created_at:>${lastSyncTime}`;
+  const queryFilter = `created_at:>'${lastSyncTime}'`;
   const graphqlQuery = buildQuery(queryFilter, cursor);
 
   // 取出当前type的id，构造id:xxx的查询参数，用于查询订单各个商品所属的合集，用于构造三级单号类型
