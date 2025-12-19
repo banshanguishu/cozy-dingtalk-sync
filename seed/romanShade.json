@@ -1,0 +1,23 @@
+{
+  "devTypeId": "string",
+  "parentId": "string",
+  "parentName": "string",
+  "thirdId": "string",
+  "thirdName": "string",
+  "createdAt": "string",
+  "updatedAt": "string",
+  "quantity": "number",
+  "collection": "string",
+  "color": "string",
+  "width": "number",
+  "length": "number",
+  "liner": "string",
+  "liftType": "string",
+  "foldStyle": "string",
+  "trimColor": "string",
+  "remote": "string",
+  "hub": "string",
+  "cordColor": "string",
+  "cordPosition": "string",
+  "source": "string"
+}

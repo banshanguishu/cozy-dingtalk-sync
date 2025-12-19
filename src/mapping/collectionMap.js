@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { DINGTALK_DRAPERY_KEYWORD } = process.env;
+const { DINGTALK_WEBHOOK_URL_DRAPERY, DINGTALK_WEBHOOK_URL_ROMANSHADE, DINGTALK_DRAPERY_KEYWORD, DINGTALK_ROMANSHADE_KEYWORD } = process.env;
 
 const COLLECTION_MAP = {
   drapery: {
@@ -8,11 +8,14 @@ const COLLECTION_MAP = {
     name: "Drapery",
     suffix: "-C",
     sourceKeyWord: DINGTALK_DRAPERY_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_DRAPERY,
   },
-  roman_shades: {
+  roman_shade: {
     id: "492919062846",
     name: "Roman Shades",
     suffix: "-S",
+    sourceKeyWord: DINGTALK_ROMANSHADE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROMANSHADE,
   },
   hardware: {
     id: "474667417918",

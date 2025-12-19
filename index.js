@@ -3,8 +3,8 @@ const { fetchOrdersPage } = require("./src/shopifyClient");
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
-const { buildThirdOrders } = require("./src/buildThirdOrders")
-const { COLLECTION_TYPE_NAMES_DEV } = require("./src/mapping/collectionMap")
+const { buildThirdOrders } = require("./src/buildThirdOrders");
+const { COLLECTION_TYPE_NAMES_DEV } = require("./src/mapping/collectionMap");
 
 // 简单的延时函数，防止 API 速率限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,7 +60,7 @@ async function run(type) {
       // console.log(`📥 ${type} 第 ${pageCount} 页获取到 ${originOrders.length} 个订单，pageInfo为：${JSON.stringify(pageInfo)}`);
 
       // 组装数据为对应type多维表所需要格式(细化到三级)
-      const thirdOrders = buildThirdOrders(originOrders, type)
+      const thirdOrders = buildThirdOrders(originOrders, type);
 
       if (thirdOrders.length === 0) {
         console.log("✅ 没有更多三级单号新订单需要同步。");
@@ -68,7 +68,7 @@ async function run(type) {
       }
 
       // 3. 推送到钉钉
-      await syncOrdersToDingTalk(thirdOrders);
+      await syncOrdersToDingTalk(thirdOrders, type);
 
       // 4. 追加日志，原始订单数据和组装后数据 (本地存档)
       const originLogFileName = `${new Date().toISOString().split("T")[0]}_sync_log.jsonl`;
@@ -104,4 +104,6 @@ async function run(type) {
   }
 }
 
-run("drapery")
+// run("drapery");
+run("roman_shade");
+

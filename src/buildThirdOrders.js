@@ -39,11 +39,46 @@ const calculateDimension = (val1 = "", val2 = "") => {
   return Math.round(result * 10) / 10;
 };
 
+/* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
+const buildThirdItem = (type, customAttributes, node) => {
+  if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) return null;
+  if (type === "drapery") {
+    return {
+      collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
+      color: customAttributes["Color"] || node.variantTitle || "/",
+      width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
+      length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
+      header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
+      liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
+      ringColor: customAttributes["Rings"] || "NA",
+      tieBack: customAttributes["Tieback"] || "/",
+      memoryShape: customAttributes["Memory Shape"] || "no memory shape",
+      roomDescription: customAttributes["Room Description (Optional)"] || "/",
+      trimColor: customAttributes["Trim Color"] || "/",
+    };
+  } else if (type === "roman_shade") {
+    return {
+      collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
+      color: customAttributes["Color"] || node.variantTitle || "/",
+      width: calculateDimension(customAttributes["Shade Width (inch)"], customAttributes["Width Fraction (optional)"]),
+      length: calculateDimension(customAttributes["Shade Length (inch)"], customAttributes["Length Fraction (optional)"]),
+      liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
+      liftType: customAttributes["Lift Type"] || "/",
+      foldStyle: customAttributes["Fold Style"] || "/",
+      trimColor: customAttributes["Trim Color"] || "/",
+      remote: customAttributes["Remote Control"] || "/",
+      hub: customAttributes["Select Connect"] || "/",
+      cordColor: customAttributes["Cord Style"] || "/",
+      cordPosition: customAttributes["Cord Loop Position"] || "/"
+    };
+  }
+};
+
 /* 根据原始订单数据构造三级订单对象数组 */
 const buildThirdOrders = (orders, type) => {
   try {
     if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) {
-      throw new Error("❌ 根据原始一级订单数据构造三级订单数据时，缺少collection type字段或者字段值不正确，程序终止！");
+      throw new Error(`❌ 根据原始一级订单数据构造三级订单数据时，缺少collection type字段或者字段值不正确，程序终止！当前type：${type}`);
     }
 
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
@@ -75,30 +110,20 @@ const buildThirdOrders = (orders, type) => {
           });
         }
 
-        const thirdOrderItem = {
-          devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用
+        // 公共字段，没有细分到三级的字段，为一级订单的信息
+        const commonField = {
+          devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用.
           parentId: o.id, // 一级订单id
           parentName: parentName, // 一级订单号
           thirdId: node.id, // 三级订单id
           thirdName: parentName + targetTypeSuffix + (currentOrders.length + 1), // 三级订单号
+          quantity: node.quantity || 0, // 商品数量
           createdAt: DateHandler(o.createdAt), // 订单创建时间
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
-          quantity: node.quantity || 0, // 商品数量
-          collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
-          color: customAttributes["Color"] || node.variantTitle || "/",
-          width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
-          length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
-          header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
-          liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
-          ringColor: customAttributes["Rings"] || "NA",
-          tieBack: customAttributes["Tieback"] || "",
-          memoryShape: customAttributes["Memory Shape"] || "no memory shape",
-          roomDescription: customAttributes["Room Description (Optional)"] || "/",
-          trimColor: customAttributes["Trim Color"] || "/",
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
-
-        currentOrders.push(thirdOrderItem);
+        const thirdOrderField = buildThirdItem(type, customAttributes, node);
+        currentOrders.push(thirdOrderField ? { ...commonField, ...thirdOrderField } : commonField);
       }
 
       thirdOrder.push(...currentOrders);

@@ -1,20 +1,14 @@
 const axios = require("axios");
+const { COLLECTION_MAP } = require("./mapping/collectionMap");
 require("dotenv").config();
-
-const { DINGTALK_WEBHOOK_URL } = process.env;
 
 /**
  * 将单个订单推送到钉钉
  * @param {Object} order - Shopify 订单数据
  */
-async function pushOrderToDingTalk(order) {
-  if (!DINGTALK_WEBHOOK_URL) {
-    console.warn("⚠️ 未配置 DINGTALK_WEBHOOK_URL，跳过钉钉同步。");
-    return false;
-  }
-
+async function pushOrderToDingTalk(order, webhook) {
   try {
-    const response = await axios.post(DINGTALK_WEBHOOK_URL, order, {
+    const response = await axios.post(webhook, order, {
       headers: { "Content-Type": "application/json" },
     });
 
@@ -35,7 +29,12 @@ async function pushOrderToDingTalk(order) {
  * 批量同步订单到钉钉
  * @param {Array} orders - 订单数组
  */
-async function syncOrdersToDingTalk(orders) {
+async function syncOrdersToDingTalk(orders, type) {
+  const webhook = COLLECTION_MAP[type].dingtalk_webhook;
+  if (!webhook) {
+    console.warn(`⚠️ 未配置 ${type} 的 webhook，跳过钉钉同步。`);
+    return false;
+  }
   console.log(`开始同步 ${orders.length} 个订单到钉钉...`);
 
   let successCount = 0;
@@ -43,7 +42,7 @@ async function syncOrdersToDingTalk(orders) {
 
   // 串行发送，避免触发限流
   for (const order of orders) {
-    const success = await pushOrderToDingTalk(order);
+    const success = await pushOrderToDingTalk(order, webhook);
     if (success) {
       successCount++;
     } else {

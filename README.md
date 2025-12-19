@@ -43,7 +43,7 @@ SHOPIFY_ADMIN_API_ACCESS_TOKEN=
 SHOPIFY_API_VERSION=2024-01
 
 # 钉钉多维表 Webhook 地址
-DINGTALK_WEBHOOK_URL=https://connector.dingtalk.com/webhook/flow/xxxxxxxxxxxx
+DINGTALK_WEBHOOK_URL_XXX=https://connector.dingtalk.com/webhook/flow/xxxxxxxxxxxx
 
 # 钉钉触发关键词 (用于安全校验或流触发)
 DINGTALK_KEYWORD=

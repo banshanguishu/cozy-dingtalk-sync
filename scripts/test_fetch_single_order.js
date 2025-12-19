@@ -7,7 +7,7 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6689112981822";
+const ORDER_ID = "gid://shopify/Order/6690093891902";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -33,6 +33,16 @@ query($id: ID!, $collectionQuery: String) {
     name
     # 创建时间
     createdAt
+    # 支付状态 (例如: PAID, PENDING, REFUNDED)
+    displayFinancialStatus
+    # 发货状态 (例如: FULFILLED, UNFULFILLED)
+    displayFulfillmentStatus
+    # 取消时间 (如果不为空，则表示已取消)
+    cancelledAt
+    # 取消原因
+    cancelReason
+    # 关闭时间 (如果不为空，则表示已归档/关闭)
+    closedAt
     # 订单价格
     totalPriceSet {
       shopMoney {
@@ -177,6 +187,21 @@ async function fetchSingleOrder() {
 
     console.log("✅ 查询成功！");
     console.log(`📂 结果已保存至: ${outputFile}`);
+
+    // --- 状态判断示例 ---
+    console.log("\n--- 订单状态判断示例 ---");
+    const isCancelled = orderData.cancelledAt !== null;
+    if (isCancelled) {
+      console.log(`⚠️ 订单已取消`);
+      console.log(`   取消时间: ${orderData.cancelledAt}`);
+      console.log(`   取消原因: ${orderData.cancelReason}`);
+    } else {
+      console.log(`✅ 订单状态正常 (未取消)`);
+    }
+
+    console.log(`💰 支付状态: ${orderData.displayFinancialStatus}`);
+    console.log(`📦 发货状态: ${orderData.displayFulfillmentStatus}`);
+    // -------------------
 
     // 简单打印部分关键信息供预览
     // console.log("\n--- 订单摘要 ---");
