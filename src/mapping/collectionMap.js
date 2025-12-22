@@ -6,6 +6,7 @@ const COLLECTION_MAP = {
   drapery: {
     id: "474551189822",
     name: "Drapery",
+    cnName: "窗帘",
     suffix: "-C",
     sourceKeyWord: DINGTALK_DRAPERY_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_DRAPERY,
@@ -13,6 +14,7 @@ const COLLECTION_MAP = {
   roman_shade: {
     id: "492919062846",
     name: "Roman Shades",
+    cnName: "罗马帘",
     suffix: "-S",
     sourceKeyWord: DINGTALK_ROMANSHADE_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROMANSHADE,

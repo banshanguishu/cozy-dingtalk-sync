@@ -27,10 +27,10 @@ function appendToLog(fileName, data) {
     const content = data.map(item => JSON.stringify(item)).join('\n') + '\n';
     
     fs.appendFileSync(filePath, content, 'utf8');
-    console.log(`📋 数据已追加到日志: ${filePath}`);
+    console.log(`📋 数据已追加到日志: ${filePath}\n`);
     return filePath;
   } catch (error) {
-    console.error(`❌ 追加日志失败: ${error.message}`);
+    console.error(`❌ 追加日志失败: ${error.message}\n`);
     // 日志写入失败不应阻断主流程
     return null; 
   }

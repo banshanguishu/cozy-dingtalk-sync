@@ -69,7 +69,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       remote: customAttributes["Remote Control"] || "/",
       hub: customAttributes["Select Connect"] || "/",
       cordColor: customAttributes["Cord Style"] || "/",
-      cordPosition: customAttributes["Cord Loop Position"] || "/"
+      cordPosition: customAttributes["Cord Loop Position"] || "/",
     };
   }
 };
@@ -96,12 +96,15 @@ const buildThirdOrders = (orders, type) => {
 
       for (const chil of o?.lineItems?.edges || []) {
         const node = chil.node || {};
+
+        // 根据商品的所属合集是否包含我们要查询的 type集合类型 来判断该商品是不是符合要求的。
+        // 商品有一个collections集合，如果里面存在对应type（通过id判断）的collection，则这个商品是需要返回的商品
         const isTargetTypeProduct = (node?.product?.collections?.edges || []).findIndex((coll) => {
           return (coll.node.id || "").endsWith(targetTypeId);
         });
-
         if (isTargetTypeProduct === -1) continue;
 
+        // 规范化一下当前商品的自定义属性
         const customAttributes = {};
         if (node.customAttributes?.length) {
           node.customAttributes.forEach(({ key, value }) => {
@@ -110,7 +113,7 @@ const buildThirdOrders = (orders, type) => {
           });
         }
 
-        // 公共字段，没有细分到三级的字段，为一级订单的信息
+        // 公共字段，从最外层订单对象身上获取，即一级订单的信息
         const commonField = {
           devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用.
           parentId: o.id, // 一级订单id

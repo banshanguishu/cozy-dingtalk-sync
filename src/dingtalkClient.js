@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { COLLECTION_MAP } = require("./mapping/collectionMap");
+const { highlightTerminalContent } = require("./utlis");
 require("dotenv").config();
 
 /**
@@ -14,7 +15,7 @@ async function pushOrderToDingTalk(order, webhook) {
 
     // 钉钉接口通常返回 200，即使业务逻辑有误也可能返回 200，需根据实际情况判断
     // 这里假设 HTTP 200 即为成功
-    console.log(`[DingTalk] ✅ 订单 ${order.thirdName || order.parentName} 同步成功`);
+    console.log(`[DingTalk] ✅ 订单 ${highlightTerminalContent(order.thirdName || order.parentName)} 同步成功`);
     return true;
   } catch (error) {
     console.error(`[DingTalk] ❌ 订单 ${order.name} 同步失败:`, error.message);
@@ -35,7 +36,7 @@ async function syncOrdersToDingTalk(orders, type) {
     console.warn(`⚠️ 未配置 ${type} 的 webhook，跳过钉钉同步。`);
     return false;
   }
-  console.log(`开始同步 ${orders.length} 个订单到钉钉...`);
+  console.log(`开始同步 ${highlightTerminalContent(orders.length)} 个订单到钉钉...`);
 
   let successCount = 0;
   let failCount = 0;
@@ -52,7 +53,7 @@ async function syncOrdersToDingTalk(orders, type) {
     // await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  console.log(`\n钉钉同步完成: ✅ ${successCount}, ❌ ${failCount}`);
+  console.log(`钉钉同步完成: ✅ ${successCount}, ❌ ${failCount}\n`);
   return { successCount, failCount };
 }
 

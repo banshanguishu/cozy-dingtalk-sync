@@ -139,7 +139,6 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, type) {
   validateConfig();
   const apiUrl = getApiUrl();
 
-  // TODO: 构造查询条件: created_at >= lastSyncTime，注意: >= 可能会包含上一批最后一条，后续需在内存去重
   const queryFilter = `created_at:>'${lastSyncTime}'`;
   const graphqlQuery = buildQuery(queryFilter, cursor);
 
@@ -168,7 +167,19 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, type) {
     }
 
     const data = response.data.data.orders;
-    const orders = data.edges.map((edge) => edge.node);
+    // 过滤掉已取消的订单 (cancelledAt 不为 null 的)
+    // 同时手动过滤掉 createdAt <= lastSyncTime 的订单，因为 Shopify 的 API 在处理时间精度时可能存在问题
+    const orders = data.edges
+      .map((edge) => edge.node)
+      .filter((order) => {
+        // 1. 过滤已取消订单
+        if (order.cancelledAt !== null) return false;
+
+        // 2. 过滤掉时间小于等于 lastSyncTime 的订单 (严格增量)
+        if (new Date(order.createdAt) <= new Date(lastSyncTime)) return false;
+
+        return true;
+      });
 
     return {
       orders,
