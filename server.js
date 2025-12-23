@@ -33,18 +33,21 @@ io.on('connection', (socket) => {
     // 监听前端的开始指令
     socket.emit('log', '准备就绪，点击按钮开始同步...');
 
-    socket.on('start-sync', () => {
+    socket.on('start-sync', (type) => {
         if (syncProcess) {
             socket.emit('log', '⚠️ 任务正在运行中，请勿重复启动。');
             return;
         }
 
-        console.log('收到启动指令，正在启动 index.js...');
+        const validTypes = ['drapery', 'roman_shade'];
+        const syncType = validTypes.includes(type) ? type : 'drapery';
+
+        console.log(`收到启动指令 (${syncType})，正在启动 index.js...`);
         
         // 使用 spawn 启动 node index.js
         // 注意：cwd 设置为当前目录，确保能读取 .env
         const nodePath = process.execPath; // 获取当前 node 可执行文件路径
-        syncProcess = spawn(nodePath, ['index.js'], {
+        syncProcess = spawn(nodePath, ['index.js', syncType], {
             cwd: __dirname,
             env: process.env, // 继承当前环境变量
             stdio: ['ignore', 'pipe', 'pipe'] // 忽略 stdin, 捕获 stdout 和 stderr

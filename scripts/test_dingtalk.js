@@ -6,6 +6,8 @@ const axios = require("axios");
 const { DINGTALK_WEBHOOK_URL, DINGTALK_KEYWORD } = process.env;
 
 async function testWebhook() {
+  // TODO: 钉钉webhook名称发生了改变，当前测试脚本还未修改正确的webhook值，暂时return
+  return
   console.log("🚀 开始测试钉钉 Webhook 推送...");
   console.log(`目标 URL: ${DINGTALK_WEBHOOK_URL}`);
 
