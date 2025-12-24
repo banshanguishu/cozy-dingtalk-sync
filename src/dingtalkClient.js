@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { COLLECTION_MAP } = require("./mapping/collectionMap");
 const { highlightTerminalContent } = require("./utlis");
+const { appendToLog } = require("./fileManager");
 require("dotenv").config();
 
 /**
@@ -44,6 +45,15 @@ async function syncOrdersToDingTalk(orders, type) {
   // 串行发送，避免触发限流
   for (const order of orders) {
     const success = await pushOrderToDingTalk(order, webhook);
+    
+    // 记录文件日志
+    const orderName = order.thirdName || order.parentName || order.name || "Unknown";
+    const resultStr = success ? "同步成功" : "同步失败";
+    const time = new Date().toISOString();
+    const logLine = `[${time}] | 三级单号：${orderName} | 结果：${resultStr}\n`;
+    
+    appendToLog('logs', type, logLine, 'log');
+
     if (success) {
       successCount++;
     } else {

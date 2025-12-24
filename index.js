@@ -68,14 +68,11 @@ async function run(type) {
         await syncOrdersToDingTalk(thirdOrders, type);
       }
 
-      // 4. 追加日志，原始订单数据和组装后数据 (本地存档)
-      if (originOrders.length > 0) {
-        const originLogFileName = `${new Date().toISOString().split("T")[0]}_sync_log.jsonl`;
-        appendToLog(originLogFileName, originOrders);
-      }
+      // 4. 追加日志，组装后数据 (本地存档)
       if (thirdOrders.length > 0) {
-        const buildlLogFileName = `${new Date().toISOString().split("T")[0]}_${type}_sync_log.jsonl`;
-        appendToLog(buildlLogFileName, thirdOrders);
+        // 转换数据格式
+        const content = thirdOrders.map((item) => JSON.stringify(item)).join("\n") + "\n";
+        appendToLog("output", type, content, "jsonl");
       }
 
       // 5. 更新时间游标 (关键!)
@@ -84,7 +81,8 @@ async function run(type) {
       if (maxTime) {
         updateLastSyncTime(maxTime, type);
         lastSyncTime = maxTime; // 更新内存变量
-        console.log(`🔖 ${typeName} 游标已更新至: ${maxTime}\n`);
+        const logLine = `[${new Date().toISOString().split("T")[0]}] | 🔖 ${typeName} 游标已更新至: ${maxTime}\n`;
+        appendToLog("logs", type, logLine, "log"); // 添加游标更新日志
       }
 
       totalProcessed += originOrders.length;
@@ -113,9 +111,13 @@ async function run(type) {
 const args = process.argv.slice(2);
 const type = args[0] || "drapery";
 
-run(type);
+// 如果是直接执行该脚本，则运行
+if (require.main === module) {
+  run(type);
+}
+
+module.exports = { run };
 
 // 开发调试，命令行方式
 // node index.js roman_shade
 // node index.js drapery
-

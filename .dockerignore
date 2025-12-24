@@ -1,0 +1,14 @@
+.*
+*.log
+*.jsonl
+bin
+tmp
+coverage
+start.bat
+logs
+node_modules
+output
+public
+scripts
+seed
+sync-time
