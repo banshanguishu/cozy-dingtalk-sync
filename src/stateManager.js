@@ -34,7 +34,6 @@ function getLastSyncTime(type) {
     }
 
     const time = fs.readFileSync(stateFile, "utf8").trim();
-        console.log("timetime", time);
     // 简单的格式校验，Date.parse()转成时间戳
     if (time && !isNaN(Date.parse(time))) {
       return time;

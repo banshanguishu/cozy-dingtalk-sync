@@ -1,6 +1,13 @@
 require("dotenv").config();
 
-const { DINGTALK_WEBHOOK_URL_DRAPERY, DINGTALK_WEBHOOK_URL_ROMANSHADE, DINGTALK_DRAPERY_KEYWORD, DINGTALK_ROMANSHADE_KEYWORD } = process.env;
+const {
+  DINGTALK_WEBHOOK_URL_DRAPERY,
+  DINGTALK_WEBHOOK_URL_ROMANSHADE,
+  DINGTALK_DRAPERY_KEYWORD,
+  DINGTALK_ROMANSHADE_KEYWORD,
+  DINGTALK_HARDWARE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_HARDWARE,
+} = process.env;
 
 const COLLECTION_MAP = {
   drapery: {
@@ -23,6 +30,9 @@ const COLLECTION_MAP = {
     id: "474667417918",
     name: "Hardware",
     suffix: "-H",
+    cnName: "配件",
+    sourceKeyWord: DINGTALK_HARDWARE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_HARDWARE,
   },
   free_swatches: {
     id: "481652998462",

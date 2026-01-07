@@ -20,3 +20,6 @@ Thumbs.db
 .idea/
 
 .prod.*
+
+# webhook文件
+webhook.*

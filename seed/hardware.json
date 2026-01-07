@@ -1,0 +1,19 @@
+{
+  "devTypeId": "string",
+  "parentId": "string",
+  "parentName": "string",
+  "thirdId": "string",
+  "thirdName": "string",
+  "createdAt": "string",
+  "updatedAt": "string",
+  "quantity": "number",
+  "productName": "string",
+  "discountCode": "string",
+  "colorSku": "number",
+  "sizeSku": "number",
+  "capStyle": "string",
+  "runnerType": "string",
+  "powerType": "string",
+  "holdbackStyle": "string",
+  "source": "string"
+}

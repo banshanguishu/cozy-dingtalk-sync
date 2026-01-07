@@ -52,7 +52,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
       ringColor: customAttributes["Rings"] || "NA",
       tieBack: customAttributes["Tieback"] || "/",
-      memoryShape: customAttributes["Memory Shape"] || "no memory shape",
+      memoryShape: customAttributes["Memory Shape"] || "Unknown",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
       trimColor: customAttributes["Trim Color"] || "/",
     };
@@ -70,6 +70,37 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       cordColor: customAttributes["Cord Style"] || "/",
       cordPosition: customAttributes["Cord Loop Position"] || "/",
+    };
+  } else if (type === "hardware") {
+    let discountCode = "/";
+    if (node.discountAllocations && node.discountAllocations.length > 0) {
+      discountCode = node.discountAllocations[0].discountApplication?.title;
+    }
+    const getColorOrLenthSku = (type) => {
+      if (customAttributes[type]) return customAttributes[type];
+      if (node.variant.selectedOptions.length > 0) {
+        const t = node.variant.selectedOptions.find((item) => item.name === type);
+        if (t) return t.value;
+      }
+      if (node.variantTitle || node.variant.title) {
+        const tle = node.variantTitle || node.variant.title;
+        if (tle.includes("/")) {
+          const split = tle.split("/")
+          return type === "Color" ? split[0] : split[1];
+        }
+        return "/";
+      }
+      return "/";
+    };
+    return {
+      productName: node.title || node.product?.title || "/",
+      discountCode,
+      colorSku: getColorOrLenthSku("Color"),
+      sizeSku: getColorOrLenthSku("Length (inch)"),
+      capStyle: customAttributes["Cap Style"] || "/",
+      runnerType: customAttributes["Runner Type"] || "/",
+      powerType: customAttributes["Power Type"] || "/",
+      holdbackStyle: customAttributes["Holdback Style"] || "/",
     };
   }
 };

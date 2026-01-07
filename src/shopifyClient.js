@@ -119,6 +119,55 @@ function buildQuery(queryFilter, afterCursor) {
                     key
                     value
                   }
+                  discountAllocations {
+                    allocatedAmount {
+                      amount
+                      currencyCode
+                    }
+                    discountApplication {
+                      index
+                      __typename
+                      ... on DiscountCodeApplication {
+                        code
+                        value {
+                          __typename
+                          ... on MoneyV2 {
+                            amount
+                            currencyCode
+                          }
+                          ... on PricingPercentageValue {
+                            percentage
+                          }
+                        }
+                      }
+                      ... on AutomaticDiscountApplication {
+                        title
+                        value {
+                          __typename
+                          ... on MoneyV2 {
+                            amount
+                            currencyCode
+                          }
+                          ... on PricingPercentageValue {
+                            percentage
+                          }
+                        }
+                      }
+                      ... on ManualDiscountApplication {
+                        title
+                        value {
+                          __typename
+                          ... on MoneyV2 {
+                            amount
+                            currencyCode
+                          }
+                          ... on PricingPercentageValue {
+                            percentage
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
