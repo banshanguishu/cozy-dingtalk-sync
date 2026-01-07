@@ -7,7 +7,7 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6697996026174";
+const ORDER_ID = "gid://shopify/Order/6705998266686";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -43,11 +43,39 @@ query($id: ID!, $collectionQuery: String) {
     cancelReason
     # 关闭时间 (如果不为空，则表示已归档/关闭)
     closedAt
+    discountCode
     # 订单价格
     totalPriceSet {
       shopMoney {
         amount
         currencyCode
+      }
+    }
+    discountApplications(first: 20) {
+      edges {
+        node {
+          index
+          __typename
+          ... on DiscountCodeApplication {
+            code
+          }
+          value {
+            __typename
+            ... on PricingPercentageValue {
+              percentage
+            }
+            ... on MoneyV2 {
+              amount
+              currencyCode
+            }
+          }
+          ... on AutomaticDiscountApplication {
+            title
+          }
+          ... on ManualDiscountApplication {
+            title
+          }
+        }
       }
     }
     # 订单商品行 (取前50条)
@@ -104,6 +132,55 @@ query($id: ID!, $collectionQuery: String) {
           customAttributes {
             key
             value
+          }
+          discountAllocations {
+            allocatedAmount {
+              amount
+              currencyCode
+            }
+            discountApplication {
+              index
+              __typename
+              ... on DiscountCodeApplication {
+                code
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+              ... on AutomaticDiscountApplication {
+                title
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+              ... on ManualDiscountApplication {
+                title
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -226,4 +303,3 @@ async function fetchSingleOrder() {
 }
 
 fetchSingleOrder();
-

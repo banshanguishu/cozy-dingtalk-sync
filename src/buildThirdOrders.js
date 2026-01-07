@@ -34,9 +34,9 @@ const calculateDimension = (val1 = "", val2 = "") => {
     return 0;
   };
 
-  // 两个值相加，并处理浮点数精度问题 (保留4位小数以防万一)
+  // 两个值相加，并处理浮点数精度问题 (保留3位小数以防万一)
   const result = parse(val1) + parse(val2);
-  return Math.round(result * 10) / 10;
+  return Math.round(result * 1000) / 1000;
 };
 
 /* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
