@@ -1,0 +1,23 @@
+{
+    "devTypeId": "string",
+    "parentId": "string",
+    "parentName": "string",
+    "thirdId": "string",
+    "thirdName": "string",
+    "createdAt": "string",
+    "updatedAt": "string",
+    "quantity": "number",
+    "collection": "string",
+    "color": "string",
+    "liftType": "string",
+    "cordColor": "string",
+    "cordLoopPosition": "string",
+    "width": "number",
+    "length": "number",
+    "lining": "string",
+    "edgeBinding": "string",
+    "remoteControl": "string",
+    "hub": "string",
+    "roomDescription": "string",
+    "source": "string"
+}

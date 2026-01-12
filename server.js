@@ -39,8 +39,13 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const validTypes = ["drapery", "roman_shade", "hardware"];
-    const syncType = validTypes.includes(type) ? type : "drapery";
+    const validTypes = ["drapery", "roman_shade", "hardware", "hanwoven_shade"];
+    const syncType = validTypes.includes(type) ? type : "";
+
+    if (!syncType) {
+      socket.emit("log", "⚠️ 无效的同步类型，请选择有效选项。");
+      return;
+    }
 
     console.log(`收到启动指令 (${syncType})，正在启动 index.js...`);
 

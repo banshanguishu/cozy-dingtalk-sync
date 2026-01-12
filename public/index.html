@@ -111,6 +111,7 @@
             <button id="startDraperyBtn" class="sync-btn">同步窗帘订单</button>
             <button id="startRomanBtn" class="sync-btn" style="background-color: #2c6ecb;">同步罗马帘订单</button>
             <button id="startHardwareBtn" class="sync-btn">同步配件订单</button>
+            <button id="startWovenBtn" class="sync-btn" style="background-color: #2c6ecb;">同步麻草帘订单</button>
 
         </div>
 
@@ -126,6 +127,7 @@
         const startDraperyBtn = document.getElementById('startDraperyBtn');
         const startRomanBtn = document.getElementById('startRomanBtn');
         const startHardwareBtn = document.getElementById('startHardwareBtn');
+        const startWovenBtn = document.getElementById('startWovenBtn');
         const logWindow = document.getElementById('logWindow');
         let isRunning = false;
 
@@ -154,26 +156,25 @@
             startDraperyBtn.disabled = disabled;
             startRomanBtn.disabled = disabled;
             startHardwareBtn.disabled = disabled;
+            startWovenBtn.disabled = disabled;
             
             if (disabled) {
                 startDraperyBtn.textContent = "同步中...";
                 startRomanBtn.textContent = "同步中...";
                 startHardwareBtn.textContent = "同步中...";
+                startWovenBtn.textContent = "同步中...";
             } else {
                 startDraperyBtn.textContent = "同步窗帘订单";
                 startRomanBtn.textContent = "同步罗马帘订单";
                 startHardwareBtn.textContent = "同步配件订单";
+                startWovenBtn.textContent = "同步麻草帘订单";
             }
         }
 
         function startSync(type) {
             if (isRunning) return;
-            
             setButtonsState(true);
             logWindow.innerHTML = ''; // 清空日志
-            const typeName = type === 'drapery' ? '窗帘' : (type === 'roman_shade' ? '罗马帘' : '配件');
-            appendLog(`🚀 发送启动指令 (${typeName})...`, 'success');
-            
             socket.emit('start-sync', type);
         }
 
@@ -181,6 +182,7 @@
         startDraperyBtn.addEventListener('click', () => startSync('drapery'));
         startRomanBtn.addEventListener('click', () => startSync('roman_shade'));
         startHardwareBtn.addEventListener('click', () => startSync('hardware'));
+        startWovenBtn.addEventListener('click', () => startSync('hanwoven_shade'));
 
         // 监听日志事件
         socket.on('log', (data) => {

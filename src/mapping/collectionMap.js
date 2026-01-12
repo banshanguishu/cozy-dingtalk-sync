@@ -7,6 +7,8 @@ const {
   DINGTALK_ROMANSHADE_KEYWORD,
   DINGTALK_HARDWARE_KEYWORD,
   DINGTALK_WEBHOOK_URL_HARDWARE,
+  DINGTALK_HANWOVENSHADE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -43,6 +45,9 @@ const COLLECTION_MAP = {
     id: "492918997310",
     name: "Hanwoven Shade",
     suffix: "-W",
+    cnName: "麻草帘",
+    sourceKeyWord: DINGTALK_HANWOVENSHADE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
   },
   accessories: {
     id: "495589982526",

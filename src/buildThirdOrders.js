@@ -42,6 +42,11 @@ const calculateDimension = (val1 = "", val2 = "") => {
 /* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
 const buildThirdItem = (type, customAttributes, node) => {
   if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) return null;
+  // 折扣码
+  let discountCode = "/";
+  if (node.discountAllocations && node.discountAllocations.length > 0) {
+    discountCode = node.discountAllocations[0].discountApplication?.title;
+  }
   if (type === "drapery") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
@@ -72,10 +77,6 @@ const buildThirdItem = (type, customAttributes, node) => {
       cordPosition: customAttributes["Cord Loop Position"] || "/",
     };
   } else if (type === "hardware") {
-    let discountCode = "/";
-    if (node.discountAllocations && node.discountAllocations.length > 0) {
-      discountCode = node.discountAllocations[0].discountApplication?.title;
-    }
     const getColorOrLenthSku = (type) => {
       if (customAttributes[type]) return customAttributes[type];
       if (node.variant.selectedOptions.length > 0) {
@@ -85,7 +86,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       if (node.variantTitle || node.variant.title) {
         const tle = node.variantTitle || node.variant.title;
         if (tle.includes("/")) {
-          const split = tle.split("/")
+          const split = tle.split("/");
           return type === "Color" ? split[0] : split[1];
         }
         return "/";
@@ -101,6 +102,21 @@ const buildThirdItem = (type, customAttributes, node) => {
       runnerType: customAttributes["Runner Type"] || "/",
       powerType: customAttributes["Power Type"] || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",
+    };
+  } else if (type === "hanwoven_shade") {
+    return {
+      collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
+      color: customAttributes["Color"] || node.variantTitle || "/",
+      liftType: customAttributes["Lift Type"] || "/",
+      cordColor: customAttributes["Cord Style"] || "/",
+      cordLoopPosition: customAttributes["Cord Loop Position"] || "/",
+      width: calculateDimension(customAttributes["Shade Width (inches)"], customAttributes["Width Fraction (optional)"]),
+      length: calculateDimension(customAttributes["Shade Length (inches)"], customAttributes["Length Fraction (optional)"]),
+      lining: customAttributes["Lining"] || "/",
+      edgeBinding: customAttributes["Edge Binding"] || "/",
+      remoteControl: customAttributes["Remote Control"] || "/",
+      hub: customAttributes["Select Connect"] || "/",
+      roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   }
 };
