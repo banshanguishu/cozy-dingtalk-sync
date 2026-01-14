@@ -170,6 +170,7 @@ const buildThirdOrders = (orders, type) => {
           quantity: node.quantity || 0, // 商品数量
           createdAt: DateHandler(o.createdAt), // 订单创建时间
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
+          note: o.note || "/",
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
         const thirdOrderField = buildThirdItem(type, customAttributes, node);

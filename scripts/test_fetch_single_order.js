@@ -7,7 +7,7 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6724407492926";
+const ORDER_ID = "gid://shopify/Order/6726056313150";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -44,6 +44,7 @@ query($id: ID!, $collectionQuery: String) {
     # 关闭时间 (如果不为空，则表示已归档/关闭)
     closedAt
     discountCode
+    note
     # 订单价格
     totalPriceSet {
       shopMoney {
@@ -259,7 +260,8 @@ async function fetchSingleOrder() {
     //     }
     //   });
     // }
-
+    console.log("\n--- 订单备注note---", orderData?.note || "没得");
+    
     fs.writeFileSync(outputFile, JSON.stringify(orderData, null, 2), "utf8");
 
     console.log("✅ 查询成功！");

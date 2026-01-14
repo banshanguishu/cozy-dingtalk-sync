@@ -6,6 +6,7 @@
   "thirdName": "string",
   "createdAt": "string",
   "updatedAt": "string",
+  "note": "string",
   "quantity": "number",
   "productName": "string",
   "discountCode": "string",

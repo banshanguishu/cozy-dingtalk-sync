@@ -55,6 +55,7 @@ function buildQuery(queryFilter, afterCursor) {
             cancelledAt
             closedAt
             processedAt
+            note
             currencyCode
             displayFulfillmentStatus
             displayFinancialStatus
