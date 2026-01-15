@@ -78,7 +78,12 @@ const buildThirdItem = (type, customAttributes, node) => {
     };
   } else if (type === "hardware") {
     const getColorOrLenthSku = (type) => {
-      if (customAttributes[type]) return customAttributes[type];
+      if (customAttributes[type]) {
+        if (type === "Length (inch)") {
+          return calculateDimension(customAttributes[type] + customAttributes["Length Fraction (optional)"]) || ""
+        }
+        return customAttributes[type]
+      };
       if (node.variant.selectedOptions.length > 0) {
         const t = node.variant.selectedOptions.find((item) => item.name === type);
         if (t) return t.value;
