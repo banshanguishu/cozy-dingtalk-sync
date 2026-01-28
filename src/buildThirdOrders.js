@@ -80,7 +80,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     const getColorOrLenthSku = (type) => {
       if (customAttributes[type]) {
         if (type === "Length (inch)") {
-          return calculateDimension(customAttributes[type] + customAttributes["Length Fraction (optional)"]) || ""
+          return calculateDimension(customAttributes[type], customAttributes["Length Fraction (optional)"]) || ""
         }
         return customAttributes[type]
       };
