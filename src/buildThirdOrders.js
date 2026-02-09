@@ -55,7 +55,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
       header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
       liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
-      ringColor: customAttributes["Rings"] || "NA",
+      ringColor: customAttributes["Rings"] || customAttributes["Grommet Color"] || "NA",
       tieBack: customAttributes["Tieback"] || "/",
       memoryShape: customAttributes["Memory Shape"] || "Unknown",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
@@ -176,6 +176,15 @@ const buildThirdOrders = (orders, type) => {
           createdAt: DateHandler(o.createdAt), // 订单创建时间
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
           note: o.note || "/",
+          customerName: o.customer?.displayName || '/', // 客户名称
+          email: o.email || '/', // 客户邮箱
+          shippingAddress: [
+            (o.shippingAddress?.name) || '/',
+            (o.shippingAddress?.address1) || '/',
+            (o.shippingAddress?.address2) || '/',
+            (o.shippingAddress?.country) || '/',
+            (o.customer?.phone) || '/'
+          ].join('\n'),
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
         const thirdOrderField = buildThirdItem(type, customAttributes, node);

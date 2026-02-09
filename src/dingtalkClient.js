@@ -34,6 +34,9 @@ async function pushOrderToDingTalk(order, webhook, orderName) {
 async function syncOrdersToDingTalk(orders, type) {
   const webhook = COLLECTION_MAP[type].dingtalk_webhook;
   if (!webhook) {
+    const time = new Date().toISOString();
+    const logLine = `【${time}】 | 跳过钉钉同步 | 失败原因：未配置 ${type} 的 webhook\n`;
+    appendToLog("logs", type, logLine, "log");
     console.warn(`⚠️ 未配置 ${type} 的 webhook，跳过钉钉同步。`);
     return false;
   }

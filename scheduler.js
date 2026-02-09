@@ -3,7 +3,7 @@ const { run } = require('./index');
 // 配置同步间隔 (默认 10 分钟)
 const SYNC_INTERVAL = (process.env.SYNC_INTERVAL_MINUTES || 10) * 60 * 1000;
 
-const TYPES_TO_SYNC = ['drapery', 'roman_shade'];
+const TYPES_TO_SYNC = ['drapery', 'roman_shade', 'hardware', 'hanwoven_shade'];
 
 async function startScheduler() {    
     console.log(`⏰ 启动自动同步调度器，间隔: ${SYNC_INTERVAL / 1000 / 60} 分钟`);

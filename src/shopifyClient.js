@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { COLLECTION_MAP } = require("./mapping/collectionMap")
+const { appendToLog } = require("./fileManager")
 require("dotenv").config();
 
 /* 环境变量 */
@@ -60,8 +61,24 @@ function buildQuery(queryFilter, afterCursor) {
             displayFulfillmentStatus
             displayFinancialStatus
             totalWeight
+            email
+            customer {
+              displayName
+              firstName
+              lastName
+              phone
+            }
             shippingAddress {
+              name
+              phone
+              address1
+              address2
+              city
+              province
+              provinceCode
+              zip
               country
+              countryCode
             }
             totalPriceSet {
               shopMoney {
@@ -213,6 +230,9 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, type) {
     );
 
     if (response.data.errors) {
+      const time = new Date().toISOString();
+      const logLine = `【${time}】 | 获取shopify订单失败 | 原因：${JSON.stringify(response.data.errors)}\n`;
+      appendToLog("logs", type, logLine, "log");
       throw new Error(`GraphQL 查询错误: ${JSON.stringify(response.data.errors, null, 2)}`);
     }
 

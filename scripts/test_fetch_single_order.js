@@ -7,7 +7,7 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6726056313150";
+const ORDER_ID = "gid://shopify/Order/6764644499774";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -45,6 +45,17 @@ query($id: ID!, $collectionQuery: String) {
     closedAt
     discountCode
     note
+    email
+    customer {
+      # 客户姓名 (显示名)
+      displayName
+      # 客户 firstName
+      firstName
+      # 客户 lastName
+      lastName
+      # 客户手机号
+      phone
+    }
     # 订单价格
     totalPriceSet {
       shopMoney {
@@ -78,6 +89,18 @@ query($id: ID!, $collectionQuery: String) {
           }
         }
       }
+    }
+    shippingAddress {
+      name
+      phone
+      address1
+      address2
+      city
+      province
+      provinceCode
+      zip
+      country
+      countryCode
     }
     # 订单商品行 (取前50条)
     lineItems(first: 50) {

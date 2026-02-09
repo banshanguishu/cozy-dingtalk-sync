@@ -49,12 +49,9 @@ async function run(type) {
   try {
     while (hasNext) {
       pageCount++;
-      // console.log(`📄 正在处理 ${type} 第 ${pageCount} 页 (Cursor: ${cursor ? "..." + cursor.slice(-10) : "Start"})...`);
 
       // 2. 拉取一页数据
       const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor, type);
-
-      // console.log(`📥 ${type} 第 ${pageCount} 页获取到 ${originOrders.length} 个订单，pageInfo为：${JSON.stringify(pageInfo)}`);
 
       // 组装数据为对应type多维表所需要格式(细化到三级)
       const thirdOrders = buildThirdOrders(originOrders, type);
@@ -98,8 +95,6 @@ async function run(type) {
         break; // 显式退出循环，双重保险
       }
     }
-
-    // console.log(`\n✅ 同步完成! 共处理 ${totalProcessed} 个订单。`);
   } catch (error) {
     console.error("\n❌ 任务异常终止:", error.message);
     process.exit(1);
