@@ -4,7 +4,7 @@ services:
   cozy-dingtalk-sync:
     image: 192.168.1.252:15000/cozy-dingtalk-sync:latest
     container_name: cozy-dingtalk-sync
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     volumes:
