@@ -113,4 +113,6 @@ if (require.main === module) {
 }
 
 // 导出run用于定时脚本scheduler.js调用（Docker构建的镜像）
-module.exports = { run };
+module.exports = {
+  run,
+};
