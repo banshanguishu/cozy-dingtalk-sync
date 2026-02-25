@@ -5,6 +5,7 @@ const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
 const { buildThirdOrders } = require("./src/buildThirdOrders");
 const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP } = require("./src/mapping/collectionMap");
+const { validateRuntimeConfig } = require("./src/configValidator");
 
 // 简单的延时函数，防止 API 速率限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -31,6 +32,9 @@ async function run(type) {
     console.log("\n❌ 缺少collection type字段或者字段值不正确，程序终止！\n");
     return;
   }
+  // 运行前集中校验当前类型所需配置，避免中途失败
+  validateRuntimeConfig(type);
+
   const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
 
   console.log(`\n🚀 开始增量查询【${typeName}】同步任务...\n`);
@@ -109,7 +113,10 @@ const type = args[0] || "drapery";
 // node index.js roman_shade
 // node index.js drapery
 if (require.main === module) {
-  run(type);
+  run(type).catch((error) => {
+    console.error("\n❌ 启动前配置校验或任务执行失败:", error.message);
+    process.exit(1);
+  });
 }
 
 // 导出run用于定时脚本scheduler.js调用（Docker构建的镜像）
