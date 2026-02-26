@@ -35,10 +35,13 @@ function validateRuntimeConfig(types) {
     const config = COLLECTION_MAP[type];
     if (!config) continue;
 
-    if (!hasText(config.id)) {
+    // 二级订单同步类型，不需要校验id和suffix
+    const isSecOrder = type === "secondary_order";
+
+    if (!isSecOrder && !hasText(config.id)) {
       errors.push(`Type "${type}" missing collection id`);
     }
-    if (!hasText(config.suffix)) {
+    if (!isSecOrder && !hasText(config.suffix)) {
       errors.push(`Type "${type}" missing suffix`);
     }
     if (!hasText(config.sourceKeyWord)) {

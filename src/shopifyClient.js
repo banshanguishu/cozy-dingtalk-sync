@@ -213,14 +213,19 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, type) {
   const collectionQuery = `id:${COLLECTION_MAP[type].id}`
 
   try {
+    const requestBody =
+      type === "secondary_order"
+        ? { query: graphqlQuery }
+        : {
+            query: graphqlQuery,
+            variables: {
+              collectionQuery: collectionQuery,
+            },
+          };
+
     const response = await axios.post(
       apiUrl,
-      {
-        query: graphqlQuery,
-        variables: {
-          collectionQuery: collectionQuery,
-        },
-      },
+      requestBody,
       {
         headers: {
           "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,

@@ -9,6 +9,8 @@ const {
   DINGTALK_WEBHOOK_URL_HARDWARE,
   DINGTALK_HANWOVENSHADE_KEYWORD,
   DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
+  DINGTALK_SECONDARYORDER_KEYWORD,
+  DINGTALK_WEBHOOK_URL_SECONDARYORDER,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -53,6 +55,12 @@ const COLLECTION_MAP = {
     id: "495589982526",
     name: "Accessories",
     suffix: "-O",
+  },
+  secondary_order: {
+    name: "Secondary Order",
+    cnName: "二级订单",
+    sourceKeyWord: DINGTALK_SECONDARYORDER_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_SECONDARYORDER,
   },
 };
 
