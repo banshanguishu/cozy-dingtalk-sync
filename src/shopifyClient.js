@@ -56,6 +56,7 @@ function buildQuery(queryFilter, afterCursor) {
             cancelledAt
             closedAt
             processedAt
+            discountCode
             note
             currencyCode
             displayFulfillmentStatus
@@ -86,6 +87,13 @@ function buildQuery(queryFilter, afterCursor) {
                 currencyCode
               }
             }
+            # 总运费价格
+            totalShippingPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
             # 默认查询订单下面的50条商品（基本来说就是全量，就不做分页）TODO: 待确认订单下最大商品数量考虑是否分页
             lineItems(first: 50) {
               edges {
@@ -96,9 +104,24 @@ function buildQuery(queryFilter, afterCursor) {
                   title
                   # 数量
                   quantity
+                  # 当前数量
+                  currentQuantity
                   # SKU
                   sku
-
+                  # 行级原总价（已乘以数量）
+                  originalTotalSet {
+                    shopMoney {
+                      amount
+                      currencyCode
+                    }
+                  }
+                  # 行级折扣后总价（已乘以数量）
+                  discountedTotalSet(withCodeDiscounts: true) {
+                    shopMoney {
+                      amount
+                      currencyCode
+                    }
+                  }
                   # 产品信息 (需 read_products 权限)
                   product {
                     # productType

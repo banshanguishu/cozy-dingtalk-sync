@@ -1,4 +1,4 @@
-const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP } = require("./mapping/collectionMap");
+﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -37,6 +37,11 @@ const calculateDimension = (val1 = "", val2 = "") => {
   // 两个值相加，并处理浮点数精度问题 (保留3位小数以防万一)
   const result = parse(val1) + parse(val2);
   return Math.round(result * 1000) / 1000;
+};
+
+/* 去掉前缀 # 获取单号 */
+const getOrderNumber = (name = "") => {
+  return name.startsWith("#") ? name.slice(1) : name;
 };
 
 /* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
@@ -80,10 +85,10 @@ const buildThirdItem = (type, customAttributes, node) => {
     const getColorOrLenthSku = (type) => {
       if (customAttributes[type]) {
         if (type === "Length (inch)") {
-          return calculateDimension(customAttributes[type], customAttributes["Length Fraction (optional)"]) || ""
+          return calculateDimension(customAttributes[type], customAttributes["Length Fraction (optional)"]) || "";
         }
-        return customAttributes[type]
-      };
+        return customAttributes[type];
+      }
       if (node.variant.selectedOptions.length > 0) {
         const t = node.variant.selectedOptions.find((item) => item.name === type);
         if (t) return t.value;
@@ -130,7 +135,9 @@ const buildThirdItem = (type, customAttributes, node) => {
 const buildThirdOrders = (orders, type) => {
   try {
     if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) {
-      throw new Error(`❌ 根据原始一级订单数据构造三级订单数据时，缺少collection type字段或者字段值不正确，程序终止！当前type：${type}`);
+      throw new Error(
+        `鉂?鏍规嵁鍘熷涓€绾ц鍗曟暟鎹瀯閫犱笁绾ц鍗曟暟鎹椂锛岀己灏慶ollection type瀛楁鎴栬€呭瓧娈靛€间笉姝ｇ‘锛岀▼搴忕粓姝紒褰撳墠type锛?{type}`,
+      );
     }
 
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
@@ -144,7 +151,7 @@ const buildThirdOrders = (orders, type) => {
       if (!o.lineItems?.edges || !Array.isArray(o.lineItems.edges)) continue;
 
       const currentOrders = [];
-      const parentName = o.name.startsWith("#") ? o.name.slice(1) : o.name;
+      const parentName = getOrderNumber(o.name);
 
       for (const chil of o?.lineItems?.edges || []) {
         const node = chil.node || {};
@@ -165,13 +172,13 @@ const buildThirdOrders = (orders, type) => {
           });
         }
 
-        const address2Keys = ['city', 'provinceCode', 'zip']
+        const address2Keys = ["city", "provinceCode", "zip"];
         const getShippingAddress = (addressInfo) => {
-          const info = addressInfo && typeof addressInfo === 'object' ? addressInfo : {};
+          const info = addressInfo && typeof addressInfo === "object" ? addressInfo : {};
           const lines = [];
 
           const normalize = (val) => {
-            if (val === null || val === undefined) return '';
+            if (val === null || val === undefined) return "";
             const str = String(val).trim();
             return str;
           };
@@ -184,24 +191,25 @@ const buildThirdOrders = (orders, type) => {
           addIfHasValue(info.name);
           addIfHasValue(info.address1);
 
-          const address2ByParts = address2Keys.map((k) => normalize(info[k])).filter(Boolean).join(' ');
+          const address2ByParts = address2Keys
+            .map((k) => normalize(info[k]))
+            .filter(Boolean)
+            .join(" ");
           const address2 = address2ByParts || normalize(info.address2);
           addIfHasValue(address2);
 
           addIfHasValue(info.country);
           addIfHasValue(info.phone);
 
-          return lines.join('\n');
-        }
+          return lines.join("\n");
+        };
 
         // 公共字段，从最外层s订单对象身上获取，即一级订单的信息
-        const customerFirstName = (o.customer?.firstName || '').trim();
-        const customerLastName = (o.customer?.lastName || '').trim();
-        const customerName = (customerFirstName && customerLastName)
-          ? `${customerFirstName} ${customerLastName}`
-          : (o.customer?.displayName || '/');
+        const customerFirstName = (o.customer?.firstName || "").trim();
+        const customerLastName = (o.customer?.lastName || "").trim();
+        const customerName = customerFirstName && customerLastName ? `${customerFirstName} ${customerLastName}` : o.customer?.displayName || "/";
         const commonField = {
-          devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用.
+          devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用
           parentId: o.id, // 一级订单id
           parentName: parentName, // 一级订单号
           thirdId: node.id, // 三级订单id
@@ -211,7 +219,7 @@ const buildThirdOrders = (orders, type) => {
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
           note: o.note || "/",
           customerName: customerName, // 客户名称
-          email: o.email || '/', // 客户邮箱
+          email: o.email || "/", // 客户邮箱
           shippingAddress: getShippingAddress({
             ...(o.shippingAddress || {}),
             phone: o.customer?.phone || o.shippingAddress?.phone,
@@ -232,6 +240,112 @@ const buildThirdOrders = (orders, type) => {
   }
 };
 
+/* 获取商品所属合集类型id */
+const getProductCollectionId = (edges) => {
+  if (!edges || !Array.isArray(edges) || edges.length === 0) return "other";
+  const ids = edges.map((edge) => (edge.node?.id || "").split("/").pop());
+  if (ids.length === 0) return "other";
+  let id = "",
+    count = 0;
+  COLLECTION_TYPE_IDS.forEach((typeId) => {
+    // 合集类型id 只能有一个，否则返回空字符串
+    if (ids.includes(typeId)) {
+      id = typeId;
+      count++;
+    }
+  });
+  return count === 1 ? id : "other";
+};
+
+/* 判断商品是否被移除 */
+const isRemoved = (node) => {
+  const quantity = Number(node.quantity) || 0;
+  const currentQuantity = Number(node.currentQuantity) || 0;
+  if (quantity > 0 && currentQuantity === 0) return true;
+  return false;
+};
+
+/* 构造二级订单对象 */
+const buildSecondOrders = (orders, type = "secondary_order") => {
+  try {
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return [];
+    }
+
+    const { sourceKeyWord: targetTypeSource } = COLLECTION_MAP[type] || {};
+
+    const result = [];
+
+    for (const o of orders) {
+      if (!o.lineItems?.edges || !Array.isArray(o.lineItems.edges) || o.lineItems.edges.length === 0) continue;
+      const parentName = getOrderNumber(o.name);
+      const commonField = {
+        parentName, // 一级单号
+        createAt: (o.createdAt || "").split("T")[0], // 订单创建时间
+        customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
+        phone: o?.shippingAddress?.phone || "/", // 客户电话
+        email: o?.email || "/", // 客户邮箱
+        discountCode: o?.discountCode || "/", // 折扣码
+        city: o?.shippingAddress?.city || "/", // 城市
+        provinceCode: o?.shippingAddress?.provinceCode || "/", // 州（身份）
+        countryCode: o?.shippingAddress?.countryCode || "/", // 国家
+        source: targetTypeSource,
+      };
+
+      const groupedByCollection = {};
+
+      for (const chil of o.lineItems.edges) {
+        const node = chil.node || {};
+
+        // 如果没有 product 信息，可能表示是已移除的商品，直接跳过
+        if (isRemoved(node)) continue;
+
+        // 获取当前商品的系列ID
+        const productCollectionId = getProductCollectionId(node?.product?.collections?.edges);
+        // const productCollectionId = (node?.product?.collections?.edges?.[0]?.node?.id || "").split("/").pop();
+        // if (!COLLECTION_TYPE_IDS.includes(productCollectionId)) continue;
+
+        if (!groupedByCollection[productCollectionId]) {
+          groupedByCollection[productCollectionId] = {
+            originalTotalPrice: 0,
+            totalPrice: 0,
+            productNames: [],
+          };
+        }
+
+        const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
+        const discountedAmount = Number(node?.discountedTotalSet?.shopMoney?.amount);
+        if (!Number.isNaN(originAmount)) groupedByCollection[productCollectionId].originalTotalPrice += originAmount;
+        if (!Number.isNaN(discountedAmount)) groupedByCollection[productCollectionId].totalPrice += discountedAmount;
+        if (node?.title) groupedByCollection[productCollectionId].productNames.push(node.title);
+      }
+
+      const shipFee = Number(o?.totalShippingPriceSet?.shopMoney?.amount);
+      // 如果订单有运费且当前订单购买了系列id为499489243454的商品（样品），则将运费加入到该系列（样品）商品的总金额中
+      if (!Number.isNaN(shipFee) && Object.hasOwn(groupedByCollection, "499489243454")) {
+        groupedByCollection["499489243454"].totalPrice += shipFee;
+      }
+
+      for (const [productCollectionId, item] of Object.entries(groupedByCollection)) {
+        const productType = productCollectionId === "other" ? "其他" : COLLECTION_ID_MAP_CONFIG[productCollectionId]?.cnName;
+        if (!productType) continue;
+        result.push({
+          ...commonField,
+          originalTotalPrice: item.originalTotalPrice,
+          totalPrice: item.totalPrice,
+          productType,
+          productNames: item.productNames?.[0] || "/",
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    return [];
+  }
+};
+
 module.exports = {
   buildThirdOrders,
+  buildSecondOrders,
 };

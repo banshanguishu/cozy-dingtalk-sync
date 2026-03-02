@@ -39,8 +39,9 @@ const COLLECTION_MAP = {
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_HARDWARE,
   },
   free_swatches: {
-    id: "481652998462",
+    id: "499489243454",
     name: "Free Swatches",
+    cnName: "样品",
     suffix: "-X",
   },
   hanwoven_shade: {
@@ -51,10 +52,11 @@ const COLLECTION_MAP = {
     sourceKeyWord: DINGTALK_HANWOVENSHADE_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
   },
-  accessories: {
-    id: "495589982526",
-    name: "Accessories",
-    suffix: "-O",
+  other_shade: {
+    id: "499488358718",
+    name: "Other Shade",
+    cnName: "其他帘子",
+    suffix: "S1",
   },
   secondary_order: {
     name: "Secondary Order",
@@ -64,15 +66,23 @@ const COLLECTION_MAP = {
   },
 };
 
-const COLLECTION_TYPE_IDS = Object.values(COLLECTION_MAP).map((colle) => colle.id);
+const COLLECTION_TYPE_IDS = Object.values(COLLECTION_MAP).map((colle) => colle.id).filter(Boolean);
 
 const COLLECTION_TYPE_NAMES = Object.values(COLLECTION_MAP).map((colle) => colle.name);
 
 const COLLECTION_TYPE_NAMES_DEV = Object.keys(COLLECTION_MAP);
+
+const COLLECTION_ID_MAP_CONFIG = Object.values(COLLECTION_MAP).reduce((prev, cur) => {
+  if (!cur.id) return prev;
+  const { id, ...rest } = cur;
+  prev[id] = rest;
+  return prev;
+}, {});
 
 module.exports = {
   COLLECTION_MAP,
   COLLECTION_TYPE_IDS,
   COLLECTION_TYPE_NAMES,
   COLLECTION_TYPE_NAMES_DEV,
+  COLLECTION_ID_MAP_CONFIG,
 };

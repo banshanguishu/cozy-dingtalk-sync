@@ -4,7 +4,8 @@ const { validateRuntimeConfig } = require('./src/configValidator');
 // 配置同步间隔 (默认 10 分钟)
 const SYNC_INTERVAL = (process.env.SYNC_INTERVAL_MINUTES || 10) * 60 * 1000;
 
-const TYPES_TO_SYNC = ['drapery', 'roman_shade', 'hardware', 'hanwoven_shade'];
+const TYPES_TO_SYNC = ['drapery', 'roman_shade', 'hardware', 'hanwoven_shade', 'secondary_order'];
+// const TYPES_TO_SYNC = ['drapery', 'hardware', 'secondary_order'];
 
 async function startScheduler() {
     validateRuntimeConfig(TYPES_TO_SYNC);

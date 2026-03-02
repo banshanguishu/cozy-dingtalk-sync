@@ -11,7 +11,7 @@ shopify_query/
 │   ├── fileManager.js          # 文件读写操作封装
 │   ├── stateManager.js         # 同步状态时间持久化
 │   ├── dingtalkClient.js       # 钉钉SDK封装工具
-│   └── buildThirdOrders.js     # 构造三级单号工具
+│   └── buildOrders.js          # 构造钉钉所需格式单号工具
 ├── output/                     # 运行时生成的数据文件 (已忽略)
 ├── index.js                    # 主程序入口
 ├── .env                        # 环境变量配置 (已忽略，需自行创建)

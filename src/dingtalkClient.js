@@ -8,7 +8,7 @@ require("dotenv").config();
  * 将单个订单推送到钉钉
  * @param {Object} order - Shopify 订单数据
  */
-async function pushOrderToDingTalk(order, webhook, orderName) {
+async function pushOrderToDingTalk(order, webhook, orderName, productType) {
   try {
     const response = await axios.post(webhook, order, {
       headers: { "Content-Type": "application/json" },
@@ -16,10 +16,10 @@ async function pushOrderToDingTalk(order, webhook, orderName) {
 
     // 钉钉接口通常返回 200，即使业务逻辑有误也可能返回 200，需根据实际情况判断
     // 这里假设 HTTP 200 即为成功
-    console.log(`[DingTalk] ✅ 订单 【${orderName}】 同步成功`);
+    console.log(`[DingTalk] ✅ 订单 【${orderName}】 【${productType}】 同步成功`);
     return true;
   } catch (error) {
-    console.error(`[DingTalk] ❌ 订单 【${orderName}】 同步失败:`, error.message);
+    console.error(`[DingTalk] ❌ 订单 【${orderName}】 【${productType}】 同步失败:`, error.message);
     if (error.response) {
       console.error("响应详情:", JSON.stringify(error.response.data));
     }
@@ -47,13 +47,22 @@ async function syncOrdersToDingTalk(orders, type) {
 
   // 串行发送，避免触发限流
   for (const order of orders) {
-    const orderName = order.thirdName || order.parentName || order.name || "Unknown";
-    const success = await pushOrderToDingTalk(order, webhook, orderName);
+    let orderName = order.thirdName || order.parentName || order.name || "Unknown";
+    let productType = "";
+    if (type === "secondary_order") {
+      orderName = order.parentName || order.name || "Unknown";
+      productType = order.productType || "Unknown";
+    }
+    const success = await pushOrderToDingTalk(order, webhook, orderName, productType);
 
     // 记录文件日志
     const resultStr = success ? "同步成功" : "同步失败";
     const time = new Date().toISOString();
-    const logLine = `【${time}】 | 三级单号：${orderName} | 结果：${resultStr}\n`;
+
+    let logLine = `【${time}】 | 三级单号：${orderName} | 结果：${resultStr}\n`;
+    if (type === "secondary_order") {
+      logLine = `【${time}】 | 二级单号：${orderName} | 类型：${productType} | 结果：${resultStr}\n`;
+    }
 
     appendToLog("logs", type, logLine, "log");
 

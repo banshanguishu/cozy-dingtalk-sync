@@ -3,7 +3,7 @@ const { fetchOrdersPage } = require("./src/shopifyClient");
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
-const { buildThirdOrders } = require("./src/buildThirdOrders");
+const { buildThirdOrders, buildSecondOrders } = require("./src/buildOrders");
 const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
 
@@ -47,7 +47,7 @@ async function run(type) {
 
   let hasNext = true;
   let cursor = null;
-  let totalProcessed = 0;
+  // let totalProcessed = 0;
   let pageCount = 0;
 
   try {
@@ -57,21 +57,33 @@ async function run(type) {
       // 2. 拉取一页数据
       const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor, type);
 
-      // 组装数据为对应type多维表所需要格式(细化到三级)
-      const thirdOrders = buildThirdOrders(originOrders, type);
+      let buildedOrder = null;
+      // const secondartOrders = buildSecondOrders(originOrders);
+      // appendToLog("output", type, JSON.stringify(secondartOrders), "json");
 
-      if (thirdOrders.length === 0) {
+      if (type === "secondary_order") {
+        // 组装数据为二级订单格式
+        buildedOrder = buildSecondOrders(originOrders, type);
+      } else {
+        // 组装数据为对应type多维表所需要格式(细化到三级)
+        buildedOrder = buildThirdOrders(originOrders, type);
+      }
+
+      // 组装数据为对应type多维表所需要格式(细化到三级)
+      // const thirdOrders = buildThirdOrders(originOrders, type);
+
+      if (buildedOrder.length === 0) {
         // ⚠️
         console.log(`✅ 第 ${pageCount} 页没有更多符合要求的三级订单\n`);
       } else {
         // 3. 推送到钉钉
-        await syncOrdersToDingTalk(thirdOrders, type);
+        await syncOrdersToDingTalk(buildedOrder, type);
       }
 
       // 4. 追加日志，组装后数据 (本地存档)
-      if (thirdOrders.length > 0) {
+      if (buildedOrder.length > 0) {
         // 转换数据格式
-        const content = thirdOrders.map((item) => JSON.stringify(item)).join("\n") + "\n";
+        const content = buildedOrder.map((item) => JSON.stringify(item)).join("\n") + "\n";
         appendToLog("output", type, content, "jsonl");
       }
 
@@ -85,7 +97,7 @@ async function run(type) {
         appendToLog("logs", type, logLine, "log"); // 添加游标更新日志
       }
 
-      totalProcessed += originOrders.length;
+      // totalProcessed += buildedOrder.length;
 
       // 准备下一页
       hasNext = pageInfo.hasNextPage === true; // 强制转换为布尔值，防止 undefined/"false" 等意外

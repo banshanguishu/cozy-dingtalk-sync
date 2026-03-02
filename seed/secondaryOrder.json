@@ -1,0 +1,16 @@
+{
+    "parentName": "string",
+    "createAt": "string",
+    "customerName": "string",
+    "phone": "string",
+    "email": "string",
+    "discountCode": "string",
+    "city": "string",
+    "provinceCode": "string",
+    "countryCode": "string",
+    "originalTotalPrice": "number",
+    "totalPrice": "number",
+    "productType": "string",
+    "productNames": "string",
+    "source": "string"
+}

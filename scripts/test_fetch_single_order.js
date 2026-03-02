@@ -7,7 +7,9 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6789975179582";
+// const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
+// const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
+const ORDER_ID = "gid://shopify/Order/6794611982654";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -63,6 +65,13 @@ query($id: ID!, $collectionQuery: String) {
         currencyCode
       }
     }
+    # 总运费价格
+    totalShippingPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
+    }
     discountApplications(first: 20) {
       edges {
         node {
@@ -112,9 +121,24 @@ query($id: ID!, $collectionQuery: String) {
           title
           # 数量
           quantity
+          # 当前数量
+          currentQuantity
           # SKU
           sku
-          
+          # 行级原总价（已乘以数量）
+          originalTotalSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+          # 行级折扣后总价（已乘以数量）
+          discountedTotalSet(withCodeDiscounts: true) {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
           # 变体标题 (快照，通常包含规格简写，如 "L / Red")
           variantTitle
           
