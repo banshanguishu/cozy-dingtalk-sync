@@ -1,26 +1,17 @@
-const { run } = require('./index');
-const { validateRuntimeConfig } = require('./src/configValidator');
+﻿const { run } = require('./index');
 
 // 配置同步间隔 (默认 10 分钟)
 const SYNC_INTERVAL = (process.env.SYNC_INTERVAL_MINUTES || 10) * 60 * 1000;
 
-const TYPES_TO_SYNC = ['drapery', 'roman_shade', 'hardware', 'hanwoven_shade', 'secondary_order'];
-// const TYPES_TO_SYNC = ['drapery', 'hardware', 'secondary_order'];
-
 async function startScheduler() {
-    validateRuntimeConfig(TYPES_TO_SYNC);
-    console.log(`⏰ 启动自动同步调度器，间隔时间为: ${SYNC_INTERVAL / 1000 / 60} 分钟`);
+    console.log(`⏰ 启动自动同步调度器，间隔时间为 ${SYNC_INTERVAL / 1000 / 60} 分钟`);
 
     const runSync = async () => {
         console.log(`\n[${new Date().toISOString()}] 开始执行同步轮询...`);
-        for (const type of TYPES_TO_SYNC) {
-            try {
-                console.log(`------------> 正在同步: ${type}`);
-                await run(type);
-                console.log(`<------------ 完成同步: ${type}\n`);
-            } catch (error) {
-                console.error(`❌ 同步 ${type} 失败:`, error);
-            }
+        try {
+            await run();
+        } catch (error) {
+            console.error('❌ 同步任务失败:', error);
         }
         console.log(`[${new Date().toISOString()}] 本次轮询结束，等待下一次...`);
     };
@@ -33,6 +24,6 @@ async function startScheduler() {
 }
 
 startScheduler().catch((error) => {
-    console.error('❌ 调度器启动失败:', error.message);
+    console.error('❌ 调度器启动失败', error.message);
     process.exit(1);
 });

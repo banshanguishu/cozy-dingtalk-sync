@@ -136,7 +136,7 @@ const buildThirdOrders = (orders, type) => {
   try {
     if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) {
       throw new Error(
-        `鉂?鏍规嵁鍘熷涓€绾ц鍗曟暟鎹瀯閫犱笁绾ц鍗曟暟鎹椂锛岀己灏慶ollection type瀛楁鎴栬€呭瓧娈靛€间笉姝ｇ‘锛岀▼搴忕粓姝紒褰撳墠type锛?{type}`,
+        `❌ 未知的 collection type: ${type}`,
       );
     }
 

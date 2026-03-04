@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 const { fetchOrdersPage } = require("./src/shopifyClient");
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
@@ -6,6 +6,10 @@ const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
 const { buildThirdOrders, buildSecondOrders } = require("./src/buildOrders");
 const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
+
+// 默认同步类型（由 run 内部统一驱动）
+const TYPES_TO_SYNC = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "secondary_order"];
+const GLOBAL_CURSOR_KEY = "global";
 
 // 简单的延时函数，防止 API 速率限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,117 +25,116 @@ function getMaxCreatedAt(orders) {
   }, null);
 }
 
+function normalizeTypes(types) {
+  if (!types) return TYPES_TO_SYNC;
+  if (Array.isArray(types)) return types;
+  return [types];
+}
+
 /**
- * 同步数据
- * @param {*} type
- * type.drapery
- * type.roman_shade
+ * 同步数据（单次拉取 + 分流处理）
+ * @param {string|string[]} [types]
  */
-async function run(type) {
-  if (!type || !COLLECTION_TYPE_NAMES_DEV.includes(type)) {
-    console.log("\n❌ 缺少collection type字段或者字段值不正确，程序终止！\n");
+async function run(types) {
+  const targetTypes = normalizeTypes(types);
+
+  if (!targetTypes.length) {
+    console.log("\n❌ 缺少需要同步的类型，程序终止！\n");
     return;
   }
-  // 运行前集中校验当前类型所需配置，避免中途失败
-  validateRuntimeConfig(type);
 
-  const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
+  for (const type of targetTypes) {
+    if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) {
+      console.log(`\n❌ 类型不正确: ${type}，程序终止！\n`);
+      return;
+    }
+  }
 
-  console.log(`\n🚀 开始增量查询【${typeName}】同步任务...\n`);
+  // 运行前校验当前任务所需配置
+  validateRuntimeConfig(targetTypes);
 
-  // 1. 获取一次 当前type类型 同步的时间点，并锁定作为本次运行的查询基准
-  let lastSyncTime = getLastSyncTime(type);
-  const queryTime = lastSyncTime;
+  console.log(`\n🚀 开始增量查询并分流同步，类型: ${targetTypes.join(", ")}\n`);
 
-  console.log(`📅 上次【${typeName}】同步时间点: ${queryTime} (本次查询基准，每页查询50条)\n`);
+  // 1. 读取全局游标，作为本轮唯一查询基准
+  const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
+  console.log(`📮 上次全局同步时间点: ${queryTime} (本次查询基准，每页查询 50 条)\n`);
 
   let hasNext = true;
   let cursor = null;
-  // let totalProcessed = 0;
   let pageCount = 0;
+  const allOriginOrders = [];
 
   try {
+    // 2. 单次分页拉取 Shopify 增量订单
     while (hasNext) {
       pageCount++;
+      const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor);
+      allOriginOrders.push(...originOrders);
 
-      // 2. 拉取一页数据
-      const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor, type);
-
-      let buildedOrder = null;
-      // const secondartOrders = buildSecondOrders(originOrders);
-      // appendToLog("output", type, JSON.stringify(secondartOrders), "json");
-
-      if (type === "secondary_order") {
-        // 组装数据为二级订单格式
-        buildedOrder = buildSecondOrders(originOrders, type);
-      } else {
-        // 组装数据为对应type多维表所需要格式(细化到三级)
-        buildedOrder = buildThirdOrders(originOrders, type);
-      }
-
-      // 组装数据为对应type多维表所需要格式(细化到三级)
-      // const thirdOrders = buildThirdOrders(originOrders, type);
-
-      if (buildedOrder.length === 0) {
-        // ⚠️
-        console.log(`✅ 第 ${pageCount} 页没有更多符合要求的三级订单\n`);
-      } else {
-        // 3. 推送到钉钉
-        await syncOrdersToDingTalk(buildedOrder, type);
-      }
-
-      // 4. 追加日志，组装后数据 (本地存档)
-      if (buildedOrder.length > 0) {
-        // 转换数据格式
-        const content = buildedOrder.map((item) => JSON.stringify(item)).join("\n") + "\n";
-        appendToLog("output", type, content, "jsonl");
-      }
-
-      // 5. 更新时间游标 (关键!)
-      // 取本页中最新的时间，立即更新到文件，确保断点续传。（注意：使用的是原始订单数据，而非构造的三级订单）
-      const maxTime = getMaxCreatedAt(originOrders);
-      if (maxTime) {
-        updateLastSyncTime(maxTime, type);
-        lastSyncTime = maxTime; // 更新内存变量
-        const logLine = `【${new Date().toISOString()}】 | 🔖 【${typeName}】 游标已更新至: ${maxTime}\n`;
-        appendToLog("logs", type, logLine, "log"); // 添加游标更新日志
-      }
-
-      // totalProcessed += buildedOrder.length;
-
-      // 准备下一页
-      hasNext = pageInfo.hasNextPage === true; // 强制转换为布尔值，防止 undefined/"false" 等意外
-
+      hasNext = pageInfo.hasNextPage === true;
       if (hasNext) {
         cursor = pageInfo.endCursor;
-        // 稍微休息一下，避免触发 API 速率限制
         await delay(500);
       } else {
-        console.log("✅ 没有更多新订单需要同步。\n");
-        break; // 显式退出循环，双重保险
+        break;
       }
+    }
+
+    if (allOriginOrders.length === 0) {
+      console.log("✅ 本轮没有新增订单需要同步。\n");
+      return;
+    }
+
+    console.log(`✅ Shopify 拉取完成，共 ${allOriginOrders.length} 条增量订单，开始分流处理。\n`);
+
+    // 3. 按 type 分流并复用现有构造/推送/日志逻辑
+    for (const type of targetTypes) {
+      const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
+      console.log(`------------> 正在同步: ${type} (${typeName})`);
+
+      const buildedOrder =
+        type === "secondary_order"
+          ? buildSecondOrders(allOriginOrders, type)
+          : buildThirdOrders(allOriginOrders, type);
+
+      if (!buildedOrder || buildedOrder.length === 0) {
+        console.log(`✅ ${type} 无需同步的数据\n`);
+        continue;
+      }
+
+      await syncOrdersToDingTalk(buildedOrder, type);
+
+      const content = buildedOrder.map((item) => JSON.stringify(item)).join("\n") + "\n";
+      appendToLog("output", type, content, "jsonl");
+
+      console.log(`<------------ 完成同步: ${type}\n`);
+    }
+
+    // 4. 整轮成功后，推进全局游标
+    const maxTime = getMaxCreatedAt(allOriginOrders);
+    if (maxTime) {
+      updateLastSyncTime(maxTime, GLOBAL_CURSOR_KEY);
+      const logLine = `【${new Date().toISOString()}】| 🔄 全局游标已更新至: ${maxTime}\n`;
+      appendToLog("logs", GLOBAL_CURSOR_KEY, logLine, "log");
+      console.log(`✅ 全局游标更新完成: ${maxTime}\n`);
     }
   } catch (error) {
     console.error("\n❌ 任务异常终止:", error.message);
-    process.exit(1);
+    throw error;
   }
 }
 
-// html调用方式，获取命令行参数，默认为 drapery
+// 直接执行脚本时，支持可选 type 参数（兼容本地单类型调试）
 const args = process.argv.slice(2);
-const type = args[0] || "drapery";
+const inputType = args[0];
 
-// 如果是直接执行该脚本，则运行，用于本地开发调试测试，和start.bat浏览器页面点击同步
-// node index.js roman_shade
-// node index.js drapery
 if (require.main === module) {
-  run(type).catch((error) => {
+  run(inputType).catch((error) => {
     console.error("\n❌ 启动前配置校验或任务执行失败:", error.message);
     process.exit(1);
   });
 }
 
-// 导出run用于定时脚本scheduler.js调用（Docker构建的镜像）
 module.exports = {
   run,
 };
