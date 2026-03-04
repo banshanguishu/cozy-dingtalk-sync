@@ -16,13 +16,10 @@ async function pushOrderToDingTalk(order, webhook, orderName, productType) {
 
     // 钉钉接口通常返回 200，即使业务逻辑有误也可能返回 200，需根据实际情况判断
     // 这里假设 HTTP 200 即为成功
-    console.log(`[DingTalk] ✅ 订单 【${orderName}】 【${productType}】 同步成功`);
+    console.log(`✅[DingTalk] 订单 【${orderName}】 【${productType}】 同步成功`);
     return true;
   } catch (error) {
-    console.error(`[DingTalk] ❌ 订单 【${orderName}】 【${productType}】 同步失败:`, error.message);
-    if (error.response) {
-      console.error("响应详情:", JSON.stringify(error.response.data));
-    }
+    console.error(`❌[DingTalk] 订单 【${orderName}】 【${productType}】 同步失败:`, error.message);
     return false;
   }
 }
@@ -33,14 +30,6 @@ async function pushOrderToDingTalk(order, webhook, orderName, productType) {
  */
 async function syncOrdersToDingTalk(orders, type) {
   const webhook = COLLECTION_MAP[type].dingtalk_webhook;
-  if (!webhook) {
-    const time = new Date().toISOString();
-    const logLine = `【${time}】 | 跳过钉钉同步 | 失败原因：未配置 ${type} 的 webhook\n`;
-    appendToLog("logs", type, logLine, "log");
-    console.warn(`⚠️ 未配置 ${type} 的 webhook，跳过钉钉同步。`);
-    return false;
-  }
-  console.log(`开始同步 ${orders.length} 个订单到钉钉...`);
 
   let successCount = 0;
   let failCount = 0;
@@ -75,7 +64,7 @@ async function syncOrdersToDingTalk(orders, type) {
     // await new Promise(resolve => setTimeout(resolve, 200));
   }
 
-  console.log(`钉钉同步完成: ✅ ${successCount}, ❌ ${failCount}\n`);
+
   return { successCount, failCount };
 }
 
