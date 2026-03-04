@@ -56,7 +56,13 @@ const COLLECTION_MAP = {
     id: "499488358718",
     name: "Other Shade",
     cnName: "其他帘子",
-    suffix: "S1",
+    suffix: "Q",
+  },
+  roller_blind: {
+    id: "497516085566",
+    name: "Roller Blind",
+    cnName: "卷帘",
+    suffix: "R",
   },
   secondary_order: {
     name: "Secondary Order",
