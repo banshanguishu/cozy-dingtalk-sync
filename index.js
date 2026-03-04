@@ -41,10 +41,9 @@ async function run(types) {
   // 运行前校验当前任务所需配置
   validateRuntimeConfig(targetTypes);
 
-  console.log(`\n\n🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
-
   // 1. 读取全局游标，作为本轮唯一查询基准
   const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
+  console.log(`\n\n🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
 
   let hasNext = true;
   let cursor = null;
@@ -112,7 +111,7 @@ const args = process.argv.slice(2);
 const inputType = args[0];
 
 if (require.main === module) {
-  run(inputType).catch((error) => {
+  run().catch((error) => {
     console.error("\n❌ 启动前配置校验或任务执行失败:", error.message);
     process.exit(1);
   });

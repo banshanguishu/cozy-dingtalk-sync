@@ -22,20 +22,20 @@ function appendToLog(type = "output", syncType, data, extension = "jsonl") {
     fs.mkdirSync(baseDir, { recursive: true });
   }
 
-  // 动态生成文件名: YYYY-MM-DD_{syncType}_sync.{extension}
-  const dateStr = new Date().toISOString().split("T")[0];
-  const fileName = `${dateStr}_${syncType}_sync.${extension}`;
+  // logs 目录按类型固定文件名，避免按日期不断生成新文件
+  const fileName =
+    type === "logs" ? `${syncType}_sync.${extension}` : `${new Date().toISOString().split("T")[0]}_${syncType}_sync.${extension}`;
   const filePath = path.join(baseDir, fileName);
 
   try {
     fs.appendFileSync(filePath, data, "utf8");
     // 只有在 output 模式下才打印详细路径，避免日志模式刷屏
     if (type === "output") {
-      console.log(`📋 数据已追加到文件: ${filePath}\n`);
+      console.log(`📋 数据已追加到文件: ${filePath}`);
     }
     return filePath;
   } catch (error) {
-    console.error(`❌ 追加文件失败: ${error.message}\n`);
+    console.error(`❌ 追加文件失败: ${error.message}`);
     return null;
   }
 }
