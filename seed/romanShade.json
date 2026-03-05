@@ -23,5 +23,6 @@
   "hub": "string",
   "cordColor": "string",
   "cordPosition": "string",
+  "roomDescription": "string",
   "source": "string"
 }
