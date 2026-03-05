@@ -1,12 +1,12 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 
-// 状态文件路径
-const STATE_FILE = (type) => path.join(__dirname, "..", "sync-time", `.${type}_last_sync_time`);
+// 状态文件路径（统一使用项目根目录下的全局游标文件）
+const STATE_FILE = () => path.join(__dirname, "..", ".global_last_sync_time");
 
 /**
  * 确保文件的目录存在
- * @param {string} filePath 
+ * @param {string} filePath
  */
 function ensureDirExists(filePath) {
   const dir = path.dirname(filePath);
@@ -20,21 +20,21 @@ function ensureDirExists(filePath) {
  * @returns {string} ISO 8601 时间字符串
  */
 function getLastSyncTime(type) {
-  try {    
-    const stateFile = STATE_FILE(type);
-    
+  try {
+    const stateFile = STATE_FILE();
+
     // 确保目录存在
     ensureDirExists(stateFile);
 
     // 如果文件不存在，创建并写入当前时间
     if (!fs.existsSync(stateFile)) {
-      const now = new Date().toISOString().split('.')[0] + "Z";
+      const now = new Date().toISOString().split(".")[0] + "Z";
       fs.writeFileSync(stateFile, now, "utf8");
       return now;
     }
 
     const time = fs.readFileSync(stateFile, "utf8").trim();
-    // 简单的格式校验，Date.parse()转成时间戳
+    // 简单格式校验：可被 Date.parse 解析
     if (time && !isNaN(Date.parse(time))) {
       return time;
     }
@@ -51,11 +51,10 @@ function getLastSyncTime(type) {
 function updateLastSyncTime(time, type) {
   try {
     if (!time) return;
-    const stateFile = STATE_FILE(type);
+    const stateFile = STATE_FILE();
     // 确保目录存在
     ensureDirExists(stateFile);
     fs.writeFileSync(stateFile, time, "utf8");
-    // console.log(`状态已更新: ${time}`); // 可选日志
   } catch (error) {
     console.error("更新状态文件失败:", error.message);
   }

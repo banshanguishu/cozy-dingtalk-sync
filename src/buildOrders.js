@@ -80,6 +80,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       cordColor: customAttributes["Cord Style"] || "/",
       cordPosition: customAttributes["Cord Loop Position"] || "/",
+      roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   } else if (type === "hardware") {
     const getColorOrLenthSku = (type) => {

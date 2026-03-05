@@ -4,17 +4,10 @@ function hasText(value) {
   return typeof value === "string" && value.trim() !== "";
 }
 
-function normalizeTypes(types) {
-  if (Array.isArray(types)) return types;
-  if (!types) return [];
-  return [types];
-}
-
-function validateRuntimeConfig(types) {
-  const targetTypes = normalizeTypes(types);
+function validateRuntimeConfig(targetTypes) {
   const errors = [];
 
-  if (targetTypes.length === 0) {
+  if (!Array.isArray(targetTypes) || targetTypes.length === 0) {
     errors.push("Missing sync types for config validation");
   }
 
@@ -61,4 +54,3 @@ function validateRuntimeConfig(types) {
 module.exports = {
   validateRuntimeConfig,
 };
-

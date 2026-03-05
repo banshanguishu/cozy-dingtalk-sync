@@ -10,4 +10,4 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./output:/app/output
-      - ./sync-time:/app/sync-time
+      - ./.global_last_sync_time:/app/.global_last_sync_time

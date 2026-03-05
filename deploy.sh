@@ -12,7 +12,9 @@ docker pull 192.168.1.252:15000/$APP:$VERSION
 
 mkdir -p ./logs
 mkdir -p ./output
-mkdir -p ./sync-time
+if [ ! -f ./.global_last_sync_time ]; then
+  touch ./.global_last_sync_time
+fi
 
 echo "Deploying with docker-compose..."
 docker-compose pull

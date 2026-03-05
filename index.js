@@ -111,7 +111,7 @@ const args = process.argv.slice(2);
 const inputType = args[0];
 
 if (require.main === module) {
-  run().catch((error) => {
+  run(inputType).catch((error) => {
     console.error("\n❌ 启动前配置校验或任务执行失败:", error.message);
     process.exit(1);
   });
