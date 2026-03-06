@@ -49,7 +49,7 @@ async function run(types) {
 
   // 1. 读取全局游标，作为本轮唯一查询基准
   const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
-  console.log(`\n\n🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
+  console.log(`🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
 
   let hasNext = true;
   let cursor = null;

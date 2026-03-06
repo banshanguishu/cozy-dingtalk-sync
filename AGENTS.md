@@ -15,4 +15,43 @@
 - 修改时优先保持向后兼容，避免破坏现有行为。
 
 ## 验证
-- 修改后如果项目已有测试/检查（lint、unit、typecheck 等），必须运行并汇报结果；如果无法运行要说明原因。
+- 默认不要执行 `npm run test` 作为每次代码更新后的固定检查。
+- 如果我明确要求，再执行指定测试/检查命令并汇报结果。
+
+## 当前目录结构（简版）
+```
+cozy-dingtalk-sync/
+├── AGENTS.md
+├── README.md
+├── VIBE_CODING.md
+├── index.js
+├── scheduler.js
+├── server.js
+├── deploy.sh
+├── build_and_push.sh
+├── docker-compose.yml
+├── Dockerfile
+├── package.json
+├── scripts/
+│   └── test_fetch_single_order.js
+├── seed/
+│   ├── drapery.jsonl
+│   ├── romanShade.json
+│   ├── hanwovenShade.json
+│   ├── hardware.json
+│   ├── rollerBlind.json
+│   ├── otherShade.json
+│   └── secondaryOrder.json
+├── src/
+│   ├── buildOrders.js
+│   ├── configValidator.js
+│   ├── dingtalkClient.js
+│   ├── fileManager.js
+│   ├── shopifyClient.js
+│   ├── stateManager.js
+│   ├── utlis.js
+│   └── mapping/
+│       └── collectionMap.js
+└── public/
+    └── index.html
+```

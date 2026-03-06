@@ -7,7 +7,7 @@ async function startScheduler() {
     console.log(`⏰ 启动自动同步调度器，间隔时间为 ${SYNC_INTERVAL / 1000 / 60} 分钟`);
 
     const runSync = async () => {
-        console.log(`\n[${new Date().toISOString()}] 开始执行同步轮询...`);
+        console.log(`\n\n[${new Date().toISOString()}] 开始执行同步轮询...`);
         try {
             await run();
         } catch (error) {
