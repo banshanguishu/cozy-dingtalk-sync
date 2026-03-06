@@ -8,7 +8,10 @@ const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
 
 // 默认同步类型（由 run 内部统一驱动）
-const TYPES_TO_SYNC = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "secondary_order"];
+// 从映射中自动收集已完成同步配置的 type，避免新增类型时遗漏
+const TYPES_TO_SYNC = Object.entries(COLLECTION_MAP)
+  .filter(([, config]) => config && config.sourceKeyWord && config.dingtalk_webhook)
+  .map(([type]) => type);
 const GLOBAL_CURSOR_KEY = "global";
 
 // 简单的延时函数，防止 API 速率限制
@@ -37,9 +40,12 @@ function normalizeTypes(types) {
  */
 async function run(types) {
   const targetTypes = normalizeTypes(types);
+  const hasExplicitTypes = Boolean(types);
 
-  // 运行前校验当前任务所需配置
-  validateRuntimeConfig(targetTypes);
+  // 显式指定 type 时，才执行严格配置校验
+  if (hasExplicitTypes) {
+    validateRuntimeConfig(targetTypes);
+  }
 
   // 1. 读取全局游标，作为本轮唯一查询基准
   const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
