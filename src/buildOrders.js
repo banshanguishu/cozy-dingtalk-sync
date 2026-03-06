@@ -129,6 +129,19 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
+  } else if (type === "roller_blind" || type === "other_shade") {
+    return {
+      color: customAttributes["Color"] || node.variantTitle || "/",
+      liftType: customAttributes["Lift Type"] || "/",
+      cordedOptions: customAttributes["Corded Options"] || "/",
+      cordLoopPosition: customAttributes["Cord Loop Positions"] || "/",
+      width: calculateDimension(customAttributes["Shade Width (inches)"], customAttributes["Width Fraction (optional)"]),
+      height: calculateDimension(customAttributes["Shade Length (inches)"], customAttributes["Length Fraction (optional)"]),
+      remoteControl: customAttributes["Remote Control"] || "/",
+      hub: customAttributes["Select Connect"] || "/",
+      roomDescription: customAttributes["Room Description (Optional)"] || "/",
+      discountCode,
+    };
   }
 };
 

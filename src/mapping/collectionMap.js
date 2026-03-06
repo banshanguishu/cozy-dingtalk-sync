@@ -11,6 +11,8 @@ const {
   DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
   DINGTALK_SECONDARYORDER_KEYWORD,
   DINGTALK_WEBHOOK_URL_SECONDARYORDER,
+  DINGTALK_ROLLERBLIND_KEYWORD,
+  DINGTALK_OTHERSHADE_KEYWORD,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -57,12 +59,14 @@ const COLLECTION_MAP = {
     name: "Other Shade",
     cnName: "其他帘子",
     suffix: "Q",
+    sourceKeyWord: DINGTALK_OTHERSHADE_KEYWORD,
   },
   roller_blind: {
     id: "497516085566",
     name: "Roller Blind",
     cnName: "卷帘",
     suffix: "R",
+    sourceKeyWord: DINGTALK_ROLLERBLIND_KEYWORD,
   },
   secondary_order: {
     name: "Secondary Order",
