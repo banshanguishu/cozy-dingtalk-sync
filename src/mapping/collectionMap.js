@@ -13,6 +13,8 @@ const {
   DINGTALK_WEBHOOK_URL_SECONDARYORDER,
   DINGTALK_ROLLERBLIND_KEYWORD,
   DINGTALK_OTHERSHADE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_ROLLERBLIND,
+  DINGTALK_WEBHOOK_URL_OTHERSHADE,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -58,15 +60,17 @@ const COLLECTION_MAP = {
     id: "499488358718",
     name: "Other Shade",
     cnName: "其他帘子",
-    suffix: "Q",
+    suffix: "-Q",
     sourceKeyWord: DINGTALK_OTHERSHADE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_OTHERSHADE,
   },
   roller_blind: {
     id: "497516085566",
     name: "Roller Blind",
     cnName: "卷帘",
-    suffix: "R",
+    suffix: "-R",
     sourceKeyWord: DINGTALK_ROLLERBLIND_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROLLERBLIND,
   },
   secondary_order: {
     name: "Secondary Order",

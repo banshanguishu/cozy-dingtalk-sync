@@ -9,7 +9,7 @@ require("dotenv").config();
 // 在此处替换为您要查询的订单 ID
 // const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
 // const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
-const ORDER_ID = "gid://shopify/Order/6707371278654";
+const ORDER_ID = "gid://shopify/Order/6796155322686";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -27,7 +27,7 @@ const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION }
 //    - variant.selectedOptions: 变体选项 (也可能包含部分规格信息)
 //    - sku: SKU
 const QUERY = `
-query($id: ID!, $collectionQuery: String) {
+query($id: ID!) {
   order(id: $id) {
     # 订单ID
     id
@@ -164,7 +164,7 @@ query($id: ID!, $collectionQuery: String) {
             #   parentId
             # }
             # 产品系列 (Collection) - 匹配指定ID
-            collections(first: 50, query: $collectionQuery) {
+            collections(first: 50) {
               edges {
                 node {
                   id
@@ -255,13 +255,7 @@ async function fetchSingleOrder() {
   const shopUrl = SHOPIFY_STORE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const apiUrl = `https://${shopUrl}/admin/api/${SHOPIFY_API_VERSION || "2024-01"}/graphql.json`;
 
-  // 构造 collectionQuery
-  // 仅查询指定的 Collection ID
-  const targetCollectionIds = ["474551189822", "492919062846", "474667417918", "481652998462"];
-  const collectionQuery = targetCollectionIds.map((id) => `id:${id}`).join(" OR ");
-
   console.log(`🔍 正在查询订单: ${ORDER_ID}`);
-  console.log(`🔍 产品系列过滤条件: ${collectionQuery}`);
   console.log(`🌐 API URL: ${apiUrl}`);
 
   try {
@@ -271,7 +265,6 @@ async function fetchSingleOrder() {
         query: QUERY,
         variables: {
           id: ORDER_ID,
-          collectionQuery: collectionQuery,
         },
       },
       {

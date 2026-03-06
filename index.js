@@ -108,7 +108,7 @@ async function run(types) {
 
 // 直接执行脚本时，支持可选 type 参数（兼容本地单类型调试）
 const args = process.argv.slice(2);
-const inputType = args[0];
+const inputType = args.length > 1 ? args : args[0];
 
 if (require.main === module) {
   run(inputType).catch((error) => {
