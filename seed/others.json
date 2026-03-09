@@ -1,0 +1,17 @@
+{
+  "devTypeId": "string",
+  "parentId": "string",
+  "parentName": "string",
+  "thirdId": "string",
+  "thirdName": "string",
+  "createdAt": "string",
+  "updatedAt": "string",
+  "note": "string",
+  "customerName": "string",
+  "email": "string",
+  "shippingAddress": "string",
+  "quantity": "number",
+  "productName": "string",
+  "discountCode": "string",
+  "source": "string"
+}

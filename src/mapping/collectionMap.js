@@ -15,6 +15,8 @@ const {
   DINGTALK_OTHERSHADE_KEYWORD,
   DINGTALK_WEBHOOK_URL_ROLLERBLIND,
   DINGTALK_WEBHOOK_URL_OTHERSHADE,
+  DINGTALK_OTHERS_KEYWORD,
+  DINGTALK_WEBHOOK_URL_OTHERS,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -71,6 +73,13 @@ const COLLECTION_MAP = {
     suffix: "-R",
     sourceKeyWord: DINGTALK_ROLLERBLIND_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROLLERBLIND,
+  },
+  others: {
+    name: "Others",
+    cnName: "其他",
+    suffix: "-O",
+    sourceKeyWord: DINGTALK_OTHERS_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_OTHERS,
   },
   secondary_order: {
     name: "Secondary Order",

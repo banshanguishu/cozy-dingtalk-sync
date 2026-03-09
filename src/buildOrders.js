@@ -1,4 +1,6 @@
 ﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
+const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade"];
+const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -142,6 +144,11 @@ const buildThirdItem = (type, customAttributes, node) => {
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
       discountCode,
     };
+  } else if (type === "others") {
+    return {
+      productName: node.title || node.product?.title || "/",
+      discountCode,
+    };
   }
 };
 
@@ -172,10 +179,12 @@ const buildThirdOrders = (orders, type) => {
 
         // 根据商品的所属合集是否包含我们要查询的 type集合类型 来判断该商品是不是符合要求的。
         // 商品有一个collections集合，如果里面存在对应type（通过id判断）的collection，则这个商品是需要返回的商品
-        const isTargetTypeProduct = (node?.product?.collections?.edges || []).findIndex((coll) => {
-          return (coll.node.id || "").endsWith(targetTypeId);
-        });
-        if (isTargetTypeProduct === -1) continue;
+        const collectionIds = (node?.product?.collections?.edges || []).map((coll) => coll?.node?.id || "");
+        const isTargetTypeProduct =
+          type === "others"
+            ? !collectionIds.some((id) => OTHERS_FALLBACK_BASE_COLLECTION_IDS.some((baseId) => id.endsWith(baseId)))
+            : collectionIds.some((id) => id.endsWith(targetTypeId));
+        if (!isTargetTypeProduct) continue;
 
         // 规范化一下当前商品的自定义属性
         const customAttributes = {};
@@ -223,7 +232,7 @@ const buildThirdOrders = (orders, type) => {
         const customerLastName = (o.customer?.lastName || "").trim();
         const customerName = customerFirstName && customerLastName ? `${customerFirstName} ${customerLastName}` : o.customer?.displayName || "/";
         const commonField = {
-          devTypeId: targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用
+          devTypeId: type === "others" ? "others" : targetTypeId, // 存储当前商品所属类型，在进行二级订单合并的时候可能有用
           parentId: o.id, // 一级订单id
           parentName: parentName, // 一级订单号
           thirdId: node.id, // 三级订单id
