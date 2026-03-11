@@ -4,6 +4,29 @@ require("dotenv").config();
 
 /* 环境变量 */
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
+const SHOPIFY_REQUEST_TIMEOUT_MS = 15000;
+const SHOPIFY_MAX_RETRIES = 3;
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isRetryableError(error) {
+  const code = error?.code;
+  if (code && ["ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "ECONNABORTED"].includes(code)) {
+    return true;
+  }
+
+  const status = error?.response?.status;
+  if (status && (status === 429 || status >= 500)) {
+    return true;
+  }
+
+  return false;
+}
+
+function getBackoffMs(attempt) {
+  // 500ms, 1000ms, 2000ms
+  return 500 * Math.pow(2, Math.max(0, attempt - 1));
+}
 
 /* 环境变量必须配置校验 */
 function validateConfig() {
@@ -208,16 +231,41 @@ async function fetchOrdersPage(lastSyncTime, cursor = null) {
   const graphqlQuery = buildQuery(queryFilter, cursor);
 
   try {
-    const response = await axios.post(
-      apiUrl,
-      { query: graphqlQuery },
-      {
-        headers: {
-          "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-          "Content-Type": "application/json",
-        },
+    let response = null;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= SHOPIFY_MAX_RETRIES; attempt++) {
+      try {
+        response = await axios.post(
+          apiUrl,
+          { query: graphqlQuery },
+          {
+            timeout: SHOPIFY_REQUEST_TIMEOUT_MS,
+            headers: {
+              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!isRetryableError(error) || attempt === SHOPIFY_MAX_RETRIES) {
+          throw error;
+        }
+        const backoffMs = getBackoffMs(attempt);
+        console.warn(
+          `⚠️ Shopify 请求失败，准备重试(${attempt}/${SHOPIFY_MAX_RETRIES})，` +
+            `code=${error.code || "N/A"} status=${error.response?.status || "N/A"}，` +
+            `等待 ${backoffMs}ms`
+        );
+        await delay(backoffMs);
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error("Shopify 请求失败：未知错误");
+    }
 
     if (response.data.errors) {
       const time = new Date().toISOString();
@@ -247,6 +295,11 @@ async function fetchOrdersPage(lastSyncTime, cursor = null) {
   } catch (error) {
     if (error.response) {
       throw new Error(`API 请求失败: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
+    if (error.code) {
+      throw new Error(
+        `API 网络请求失败: code=${error.code} address=${error.address || "N/A"} port=${error.port || "N/A"} message=${error.message}`
+      );
     }
     throw error;
   }
