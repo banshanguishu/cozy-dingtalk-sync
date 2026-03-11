@@ -8,6 +8,7 @@ node_modules/
 # 运行时输出文件
 output/
 *.log
+!codex.log
 
 # 便携式环境目录
 bin/
