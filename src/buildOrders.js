@@ -1,5 +1,5 @@
 ﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
-const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade"];
+const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
 
 /* 名称处理 */
