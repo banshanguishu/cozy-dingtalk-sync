@@ -6,6 +6,8 @@
     "phone": "string",
     "email": "string",
     "discountCode": "string",
+    "address1": "string",
+    "zip": "string",
     "city": "string",
     "provinceCode": "string",
     "countryCode": "string",

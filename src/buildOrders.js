@@ -310,6 +310,8 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         phone: o?.shippingAddress?.phone || "/", // 客户电话
         email: o?.email || "/", // 客户邮箱
         discountCode: o?.discountCode || "/", // 折扣码
+        address1: o?.shippingAddress?.address1 || "/", // 详细地址
+        zip: o?.shippingAddress?.zip || "/", // 邮编
         city: o?.shippingAddress?.city || "/", // 城市
         provinceCode: o?.shippingAddress?.provinceCode || "/", // 州（身份）
         countryCode: o?.shippingAddress?.countryCode || "/", // 国家
