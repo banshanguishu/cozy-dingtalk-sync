@@ -14,6 +14,5 @@
     "originalTotalPrice": "number",
     "totalPrice": "number",
     "productType": "string",
-    "productNames": "string",
     "source": "string"
 }
