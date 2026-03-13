@@ -1,6 +1,7 @@
 {
     "parentName": "string",
     "createAt": "string",
+    "usdToRmbRate": "number|null",
     "customerName": "string",
     "phone": "string",
     "email": "string",

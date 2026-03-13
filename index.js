@@ -6,6 +6,7 @@ const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
 const { buildThirdOrders, buildSecondOrders } = require("./src/buildOrders");
 const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
+const { queryExchangeRate } = require("./src/exchangeRate");
 
 // 默认同步类型（由 run 内部统一驱动）
 // 从映射中自动收集已完成同步配置的 type，避免新增类型时遗漏
@@ -55,6 +56,7 @@ async function run(types) {
   let cursor = null;
   let pageCount = 0;
   const allOriginOrders = [];
+  let usdToRmbRate = null;
 
   try {
     // 2. 单次分页拉取 Shopify 增量订单
@@ -79,12 +81,23 @@ async function run(types) {
 
     console.log(`✅ Shopify 拉取完成，共【${allOriginOrders.length}】条增量订单，开始分流处理。`);
 
+    // secondary_order 仅在本轮查询一次汇率，避免重复请求
+    if (targetTypes.includes("secondary_order")) {
+      try {
+        usdToRmbRate = await queryExchangeRate(undefined, "USD", "RMB");
+        console.log(`💱 本轮 USD->RMB 汇率: ${usdToRmbRate}`);
+      } catch (error) {
+        console.warn(`⚠️ 汇率查询失败，本轮 secondary_order 将使用空汇率: ${error.message}`);
+      }
+    }
+
     // 3. 按 type 分流并复用现有构造/推送/日志逻辑
     for (const type of targetTypes) {
       const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
       console.log(`📮开始分流同步【${typeName}】的订单`);
 
-      const buildedOrder = type === "secondary_order" ? buildSecondOrders(allOriginOrders, type) : buildThirdOrders(allOriginOrders, type);
+      const buildedOrder =
+        type === "secondary_order" ? buildSecondOrders(allOriginOrders, type, usdToRmbRate) : buildThirdOrders(allOriginOrders, type);
 
       if (!buildedOrder || buildedOrder.length === 0) {
         console.log(`✅ 没有需要同步的【${typeName}】订单`);

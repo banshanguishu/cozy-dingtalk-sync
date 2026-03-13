@@ -5,13 +5,14 @@ const dotenv = require("dotenv");
 require("dotenv").config();
 
 const { buildThirdOrders, buildSecondOrders } = require("../src/buildOrders");
+const { queryExchangeRate } = require("../src/exchangeRate");
 const { COLLECTION_MAP } = require("../src/mapping/collectionMap");
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 const TEST_WEBHOOK_FILE = path.join(process.cwd(), ".env.test.local");
 
-const DEFAULT_ORDER_ID = "6793024012606";
-const DEFAULT_TYPE = "others";
+const DEFAULT_ORDER_ID = "6811243774270";
+const DEFAULT_TYPE = "secondary_order";
 
 const ORDER_QUERY = `
 query($id: ID!) {
@@ -214,14 +215,21 @@ async function fetchOrder(orderId) {
   return response.data?.data?.order || null;
 }
 
-function buildByType(order, type) {
+async function buildByType(order, type) {
   if (!COLLECTION_MAP[type]) {
     throw new Error(`未知类型: ${type}`);
   }
   if (type === "secondary_order") {
-    return buildSecondOrders([order], type);
+    let usdToRmbRate = null;
+    try {
+      usdToRmbRate = await queryExchangeRate(undefined, "USD", "RMB");
+      console.log(`💱 当前测试 USD->RMB 汇率: ${usdToRmbRate}`);
+    } catch (error) {
+      console.warn(`⚠️ 汇率查询失败，secondary_order 将使用空汇率: ${error.message}`);
+    }
+    return { builtOrders: buildSecondOrders([order], type, usdToRmbRate), usdToRmbRate };
   }
-  return buildThirdOrders([order], type);
+  return { builtOrders: buildThirdOrders([order], type), usdToRmbRate: null };
 }
 
 async function syncBuiltOrdersToDingTalk(builtOrders, type) {
@@ -285,12 +293,13 @@ async function main() {
     throw new Error("未找到目标订单，请确认订单ID");
   }
 
-  const built = buildByType(order, type);
+  const { builtOrders: built, usdToRmbRate } = await buildByType(order, type);
   const result = {
     orderId,
     orderName: order.name,
     type,
     syncEnabled: sync,
+    usdToRmbRate,
     matchedCount: built.length,
     builtOrders: built,
   };

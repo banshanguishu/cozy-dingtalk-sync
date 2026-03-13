@@ -289,7 +289,7 @@ const isRemoved = (node) => {
 };
 
 /* 构造二级订单对象 */
-const buildSecondOrders = (orders, type = "secondary_order") => {
+const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null) => {
   try {
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
       return [];
@@ -305,6 +305,7 @@ const buildSecondOrders = (orders, type = "secondary_order") => {
       const commonField = {
         parentName, // 一级单号
         createAt: (o.createdAt || "").split("T")[0], // 订单创建时间
+        usdToRmbRate, // 当前同步轮次汇率
         customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
         phone: o?.shippingAddress?.phone || "/", // 客户电话
         email: o?.email || "/", // 客户邮箱
