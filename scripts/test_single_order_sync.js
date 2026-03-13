@@ -11,7 +11,7 @@ const { COLLECTION_MAP } = require("../src/mapping/collectionMap");
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 const TEST_WEBHOOK_FILE = path.join(process.cwd(), ".env.test.local");
 
-const DEFAULT_ORDER_ID = "6811243774270";
+const DEFAULT_ORDER_ID = "6811244527934";
 const DEFAULT_TYPE = "secondary_order";
 
 const ORDER_QUERY = `
@@ -43,6 +43,12 @@ query($id: ID!) {
       zip
       country
       countryCode
+    }
+    totalPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
     }
     totalShippingPriceSet {
       shopMoney {

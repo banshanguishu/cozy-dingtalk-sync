@@ -1,6 +1,7 @@
 ﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
+const FREE_SWATCHES_COLLECTION_ID = "499489243454";
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -288,6 +289,12 @@ const isRemoved = (node) => {
   return false;
 };
 
+const roundTo2 = (num) => {
+  const n = Number(num);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+};
+
 /* 构造二级订单对象 */
 const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null) => {
   try {
@@ -340,16 +347,51 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
-        const discountedAmount = Number(node?.discountedTotalSet?.shopMoney?.amount);
         if (!Number.isNaN(originAmount)) groupedByCollection[productCollectionId].originalTotalPrice += originAmount;
-        if (!Number.isNaN(discountedAmount)) groupedByCollection[productCollectionId].totalPrice += discountedAmount;
         if (node?.title) groupedByCollection[productCollectionId].productNames.push(node.title);
       }
 
+      // 新规则：先按“订单商品总价池（订单总价-运费）”按类别原总价比例分摊折后价
+      const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
       const shipFee = Number(o?.totalShippingPriceSet?.shopMoney?.amount);
-      // 如果订单有运费且当前订单购买了系列id为499489243454的商品（样品），则将运费加入到该系列（样品）商品的总金额中
-      if (!Number.isNaN(shipFee) && Object.hasOwn(groupedByCollection, "499489243454")) {
-        groupedByCollection["499489243454"].totalPrice += shipFee;
+      const safeOrderTotalPrice = Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0;
+      const safeShipFee = Number.isFinite(shipFee) ? shipFee : 0;
+      const goodsTotalPrice = safeOrderTotalPrice - safeShipFee;
+
+      const groupedEntries = Object.entries(groupedByCollection);
+      const orderOriginalTotalSum = groupedEntries.reduce((sum, [, item]) => {
+        const original = Number(item?.originalTotalPrice);
+        return Number.isFinite(original) ? sum + original : sum;
+      }, 0);
+
+      const positiveOriginalEntries = groupedEntries.filter(([, item]) => (Number(item?.originalTotalPrice) || 0) > 0);
+
+      // 先将每个类别 totalPrice 初始化为 0，符合“原总价为0则折后价直接为0”的要求
+      for (const [, item] of groupedEntries) {
+        item.totalPrice = 0;
+      }
+
+      if (orderOriginalTotalSum > 0 && positiveOriginalEntries.length > 0) {
+        let allocatedGoodsTotal = 0;
+        const lastIdx = positiveOriginalEntries.length - 1;
+
+        for (let i = 0; i < positiveOriginalEntries.length; i++) {
+          const [, item] = positiveOriginalEntries[i];
+          const original = Number(item.originalTotalPrice) || 0;
+
+          if (i === lastIdx) {
+            item.totalPrice = roundTo2(goodsTotalPrice - allocatedGoodsTotal);
+          } else {
+            const shared = roundTo2((goodsTotalPrice * original) / orderOriginalTotalSum);
+            item.totalPrice = shared;
+            allocatedGoodsTotal += shared;
+          }
+        }
+      }
+
+      // 分摊完成后，运费特殊加在样品类别（free swatches）上
+      if (Number.isFinite(shipFee) && Object.hasOwn(groupedByCollection, FREE_SWATCHES_COLLECTION_ID)) {
+        groupedByCollection[FREE_SWATCHES_COLLECTION_ID].totalPrice = roundTo2(groupedByCollection[FREE_SWATCHES_COLLECTION_ID].totalPrice + shipFee);
       }
 
       for (const [productCollectionId, item] of Object.entries(groupedByCollection)) {
