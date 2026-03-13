@@ -18,6 +18,12 @@
 - 默认不要执行 `npm run test` 作为每次代码更新后的固定检查。
 - 如果我明确要求，再执行指定测试/检查命令并汇报结果。
 
+## 新增模块说明
+- 汇率查询模块位于 `src/exchangeRate.js`。
+- 对外方法：`queryExchangeRate(inputDate, currency = "USD", targetCurrency = "RMB")`。
+- 返回规则：接口响应 `code === 200` 时返回 `rate` 数值，否则返回 `null`。
+- 支持 CLI 直接运行：`node src/exchangeRate.js [dateString] [currency] [targetCurrency]`。
+
 ## 当前目录结构（简版）
 ```
 cozy-dingtalk-sync/
@@ -26,14 +32,14 @@ cozy-dingtalk-sync/
 ├── VIBE_CODING.md
 ├── index.js
 ├── scheduler.js
-├── server.js
 ├── deploy.sh
-├── build_and_push.sh
+├── build_and_push.bat
 ├── docker-compose.yml
 ├── Dockerfile
 ├── package.json
 ├── scripts/
-│   └── test_fetch_single_order.js
+│   ├── test_fetch_single_order.js
+│   └── test_single_order_sync.js
 ├── seed/
 │   ├── drapery.jsonl
 │   ├── romanShade.json
@@ -41,17 +47,17 @@ cozy-dingtalk-sync/
 │   ├── hardware.json
 │   ├── rollerBlind.json
 │   ├── otherShade.json
+│   ├── others.json
 │   └── secondaryOrder.json
 ├── src/
 │   ├── buildOrders.js
 │   ├── configValidator.js
 │   ├── dingtalkClient.js
+│   ├── exchangeRate.js
 │   ├── fileManager.js
 │   ├── shopifyClient.js
 │   ├── stateManager.js
 │   ├── utlis.js
 │   └── mapping/
 │       └── collectionMap.js
-└── public/
-    └── index.html
 ```

@@ -2,23 +2,6 @@
 
 这是一个 Node.js 工具，用于从 Shopify 获取订单数据并同步到钉钉多维表（开发中）。
 
-## 📁 目录结构
-
-```
-shopify_query/
-├── src/
-│   ├── shopifyClient.js        # Shopify GraphQL API 客户端封装
-│   ├── fileManager.js          # 文件读写操作封装
-│   ├── stateManager.js         # 同步状态时间持久化
-│   ├── dingtalkClient.js       # 钉钉SDK封装工具
-│   └── buildOrders.js          # 构造钉钉所需格式单号工具
-├── output/                     # 运行时生成的数据文件 (已忽略)
-├── index.js                    # 主程序入口
-├── .env                        # 环境变量配置 (已忽略，需自行创建)
-├── .env.example                # 环境变量配置示例文件
-└── package.json
-```
-
 ## 🚀 快速开始
 
 ### 1. 安装依赖
