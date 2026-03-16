@@ -343,11 +343,13 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           groupedByCollection[productCollectionId] = {
             originalTotalPrice: 0,
             totalPrice: 0,
+            productNames: [],
           };
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
         if (!Number.isNaN(originAmount)) groupedByCollection[productCollectionId].originalTotalPrice += originAmount;
+        if (node?.title) groupedByCollection[productCollectionId].productNames.push(node.title);
       }
 
       // 新规则：先按“订单商品总价池（订单总价-运费）”按类别原总价比例分摊折后价
@@ -401,6 +403,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           originalTotalPrice: item.originalTotalPrice,
           totalPrice: item.totalPrice,
           productType,
+          productNames: item.productNames?.length ? item.productNames.join("；") : "/",
         });
       }
     }
