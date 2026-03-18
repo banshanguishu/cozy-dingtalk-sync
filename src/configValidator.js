@@ -31,7 +31,6 @@ function validateRuntimeConfig(targetTypes) {
     // secondary_order / others / refund 不是按固定 collection id 匹配，不校验 id
     const isNoCollectionIdType = type === "secondary_order" || type === "others" || type === "refund";
     const isNoSuffixType = type === "secondary_order" || type === "refund";
-    const isRefund = type === "refund";
 
     if (!isNoCollectionIdType && !hasText(config.id)) {
       errors.push(`Type "${type}" missing collection id`);
@@ -39,10 +38,10 @@ function validateRuntimeConfig(targetTypes) {
     if (!isNoSuffixType && !hasText(config.suffix)) {
       errors.push(`Type "${type}" missing suffix`);
     }
-    if (!isRefund && !hasText(config.sourceKeyWord)) {
+    if (!hasText(config.sourceKeyWord)) {
       errors.push(`Type "${type}" missing source keyword env mapping`);
     }
-    if (!isRefund && !hasText(config.dingtalk_webhook)) {
+    if (!hasText(config.dingtalk_webhook)) {
       errors.push(`Type "${type}" missing dingtalk webhook env mapping`);
     }
   }

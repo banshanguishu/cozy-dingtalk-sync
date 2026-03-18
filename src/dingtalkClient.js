@@ -42,6 +42,9 @@ async function syncOrdersToDingTalk(orders, type) {
       orderName = order.parentName || order.name || "Unknown";
       productType = order.productType || "Unknown";
     }
+    if (type === "refund") {
+      orderName = order.orderName || order.name || "Unknown";
+    }
     const success = await pushOrderToDingTalk(order, webhook, orderName, productType);
 
     // 记录文件日志
@@ -51,6 +54,9 @@ async function syncOrdersToDingTalk(orders, type) {
     let logLine = `【${time}】 | 三级单号：${orderName} | 结果：${resultStr}\n`;
     if (type === "secondary_order") {
       logLine = `【${time}】 | 二级单号：${orderName} | 类型：${productType} | 结果：${resultStr}\n`;
+    }
+    if (type === "refund") {
+      logLine = `【${time}】 | 订单号：${orderName} | 退款时间：${order.refundTime || "/"} | 结果：${resultStr}\n`;
     }
 
     appendToLog("logs", type, logLine, "log");

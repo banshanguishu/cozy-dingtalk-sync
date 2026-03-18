@@ -1,9 +1,9 @@
 ﻿require("dotenv").config();
-const { fetchOrdersPage } = require("./src/shopifyClient");
+const { fetchOrdersPage, fetchRefundOrdersPage } = require("./src/shopifyClient");
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
-const { buildThirdOrders, buildSecondOrders } = require("./src/buildOrders");
+const { buildThirdOrders, buildSecondOrders, buildRefundOrders } = require("./src/buildOrders");
 const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
 const { queryExchangeRate } = require("./src/exchangeRate");
@@ -11,7 +11,7 @@ const { queryExchangeRate } = require("./src/exchangeRate");
 // 默认同步类型（由 run 内部统一驱动）
 // 从映射中自动收集已完成同步配置的 type，避免新增类型时遗漏
 const TYPES_TO_SYNC = Object.entries(COLLECTION_MAP)
-  .filter(([, config]) => config && config.sourceKeyWord && config.dingtalk_webhook)
+  .filter(([type, config]) => type !== "refund" && config && config.sourceKeyWord && config.dingtalk_webhook)
   .map(([type]) => type);
 const GLOBAL_CURSOR_KEY = "global";
 const REFUND_CURSOR_KEY = "refund";
@@ -43,12 +43,7 @@ async function runRefundSync() {
 
   try {
     while (hasNext) {
-      const { orders, pageInfo } = await fetchOrdersPage(refundQueryTime, cursor, {
-        queryField: "updated_at",
-        compareField: "updatedAt",
-        sortKey: "UPDATED_AT",
-        logType: REFUND_CURSOR_KEY,
-      });
+      const { orders, pageInfo } = await fetchRefundOrdersPage(refundQueryTime, cursor);
       refundOrders.push(...orders);
 
       hasNext = pageInfo.hasNextPage === true;
@@ -65,15 +60,26 @@ async function runRefundSync() {
       return;
     }
 
-    console.log(`✅ Shopify 退款增量订单拉取完成，共【${refundOrders.length}】条。`);
-    console.log("TODO(refund): 在这里补充退款记录字段构造与同步逻辑。");
+    console.log(`✅ Shopify 退款增量订单拉取完成，共【${refundOrders.length}】条候选订单。`);
 
-    const maxUpdatedAt = getMaxFieldTime(refundOrders, "updatedAt");
-    if (maxUpdatedAt) {
-      updateLastSyncTime(maxUpdatedAt, REFUND_CURSOR_KEY);
-      const refundLogLine = `【${new Date().toISOString()}】| 🔄 退款游标已更新至: ${maxUpdatedAt}\n`;
+    const buildedRefundOrders = buildRefundOrders(refundOrders, refundQueryTime, REFUND_CURSOR_KEY);
+    if (!buildedRefundOrders.length) {
+      console.log("✅ 本轮没有新增退款记录需要同步。");
+      return;
+    }
+
+    const { successCount, failCount } = await syncOrdersToDingTalk(buildedRefundOrders, REFUND_CURSOR_KEY);
+    console.log(`✅ ${successCount}, ❌ ${failCount}`);
+
+    const content = buildedRefundOrders.map((item) => JSON.stringify(item)).join("\n") + "\n";
+    appendToLog("output", REFUND_CURSOR_KEY, content, "jsonl");
+
+    const maxRefundTime = getMaxFieldTime(buildedRefundOrders, "refundTime");
+    if (maxRefundTime) {
+      updateLastSyncTime(maxRefundTime, REFUND_CURSOR_KEY);
+      const refundLogLine = `【${new Date().toISOString()}】| 🔄 退款游标已更新至: ${maxRefundTime}\n`;
       appendToLog("logs", REFUND_CURSOR_KEY, refundLogLine, "log");
-      console.log(`✅ 退款游标更新至【${maxUpdatedAt}】`);
+      console.log(`✅ 退款游标更新至【${maxRefundTime}】`);
     }
   } catch (error) {
     console.error("❌ 退款查询任务异常终止:", error.message);

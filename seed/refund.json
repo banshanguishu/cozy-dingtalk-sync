@@ -1,0 +1,11 @@
+{
+    "refundId": "string",
+    "legacyRefundId": "string",
+    "orderId": "string",
+    "orderName": "string",
+    "refundTime": "string",
+    "refundAmount": "string",
+    "refundCurrency": "string",
+    "refundNote": "string",
+    "source": "string"
+}

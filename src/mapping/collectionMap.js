@@ -17,6 +17,8 @@ const {
   DINGTALK_WEBHOOK_URL_OTHERSHADE,
   DINGTALK_OTHERS_KEYWORD,
   DINGTALK_WEBHOOK_URL_OTHERS,
+  DINGTALK_REFUND_KEYWORD,
+  DINGTALK_WEBHOOK_URL_REFUND,
 } = process.env;
 
 const COLLECTION_MAP = {
@@ -84,6 +86,8 @@ const COLLECTION_MAP = {
   refund: {
     name: "Refund",
     cnName: "退款",
+    sourceKeyWord: DINGTALK_REFUND_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_REFUND,
   },
   secondary_order: {
     name: "Secondary Order",

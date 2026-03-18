@@ -414,7 +414,51 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
   }
 };
 
+const buildRefundOrders = (orders, refundCursor, type = "refund") => {
+  try {
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return [];
+    }
+
+    const { sourceKeyWord: targetTypeSource } = COLLECTION_MAP[type] || {};
+    const result = [];
+    const cursorTime = refundCursor ? new Date(refundCursor) : null;
+
+    for (const order of orders) {
+      const refundEdges = order?.refunds?.edges || [];
+      if (!Array.isArray(refundEdges) || refundEdges.length === 0) continue;
+
+      for (const edge of refundEdges) {
+        const refund = edge?.node;
+        if (!refund?.createdAt) continue;
+
+        const refundCreatedAt = new Date(refund.createdAt);
+        if (cursorTime && refundCreatedAt <= cursorTime) continue;
+
+        result.push({
+          refundId: refund.id || "/",
+          legacyRefundId: refund.legacyResourceId || "/",
+          orderId: order.id || "/",
+          orderName: order.name || "/",
+          name: order.name || "/",
+          refundTime: refund.createdAt,
+          refundAmount: refund?.totalRefundedSet?.shopMoney?.amount || "0",
+          refundCurrency: refund?.totalRefundedSet?.shopMoney?.currencyCode || "/",
+          refundNote: refund.note || "/",
+          source: targetTypeSource,
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
 module.exports = {
   buildThirdOrders,
   buildSecondOrders,
+  buildRefundOrders,
 };

@@ -219,79 +219,128 @@ function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
   `;
 }
 
+function buildRefundOrdersQuery(queryFilter, afterCursor) {
+  const args = [
+    "first: 50",
+    "sortKey: UPDATED_AT",
+    "reverse: false",
+    `query: "${queryFilter}"`,
+  ];
+
+  if (afterCursor) {
+    args.push(`after: "${afterCursor}"`);
+  }
+
+  return `
+    query {
+      orders(${args.join(", ")}) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            id
+            name
+            updatedAt
+            refunds(first: 50) {
+              edges {
+                node {
+                  id
+                  legacyResourceId
+                  createdAt
+                  updatedAt
+                  note
+                  totalRefundedSet {
+                    shopMoney {
+                      amount
+                      currencyCode
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+}
+
+async function executeOrdersQuery(apiUrl, graphqlQuery, requestLabel) {
+  let response = null;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= SHOPIFY_MAX_RETRIES; attempt++) {
+    try {
+      response = await axios.post(
+        apiUrl,
+        { query: graphqlQuery },
+        {
+          timeout: SHOPIFY_REQUEST_TIMEOUT_MS,
+          headers: {
+            "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      break;
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableError(error) || attempt === SHOPIFY_MAX_RETRIES) {
+        throw error;
+      }
+      const backoffMs = getBackoffMs(attempt);
+      console.warn(
+        `⚠️ Shopify ${requestLabel}请求失败，准备重试(${attempt}/${SHOPIFY_MAX_RETRIES})，` +
+          `code=${error.code || "N/A"} status=${error.response?.status || "N/A"}，` +
+          `等待 ${backoffMs}ms`
+      );
+      await delay(backoffMs);
+    }
+  }
+
+  if (!response) {
+    throw lastError || new Error(`Shopify ${requestLabel}请求失败：未知错误`);
+  }
+
+  return response;
+}
+
+function handleGraphQLErrors(response, logType, logLabel) {
+  if (!response.data.errors) {
+    return;
+  }
+
+  const time = new Date().toISOString();
+  const logLine = `【${time}】| 获取shopify${logLabel}失败 | 原因：${JSON.stringify(response.data.errors)}\n`;
+  appendToLog("logs", logType, logLine, "log");
+  throw new Error(`GraphQL 查询错误: ${JSON.stringify(response.data.errors, null, 2)}`);
+}
+
 /**
  * 获取 Shopify 订单（分页模式）
  * @param {string} lastSyncTime - 上次同步时间 (ISO 8601)
  * @param {string|null} cursor - 分页游标
- * @param {{queryField?: string, compareField?: string, sortKey?: string, logType?: string}} [options] - 查询配置
  * @returns {Promise<{orders: Array, pageInfo: Object}>}
  */
-async function fetchOrdersPage(lastSyncTime, cursor = null, options = {}) {
+async function fetchOrdersPage(lastSyncTime, cursor = null) {
   validateConfig();
   const apiUrl = getApiUrl();
-  const queryField = options.queryField || "created_at";
-  const compareField = options.compareField || "createdAt";
-  const sortKey = options.sortKey || "CREATED_AT";
-  const logType = options.logType || "global";
-
-  const queryFilter = `${queryField}:>'${lastSyncTime}'`;
-  const graphqlQuery = buildQuery(queryFilter, cursor, sortKey);
+  const queryFilter = `created_at:>'${lastSyncTime}'`;
+  const graphqlQuery = buildQuery(queryFilter, cursor, "CREATED_AT");
 
   try {
-    let response = null;
-    let lastError = null;
-
-    for (let attempt = 1; attempt <= SHOPIFY_MAX_RETRIES; attempt++) {
-      try {
-        response = await axios.post(
-          apiUrl,
-          { query: graphqlQuery },
-          {
-            timeout: SHOPIFY_REQUEST_TIMEOUT_MS,
-            headers: {
-              "X-Shopify-Access-Token": SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        break;
-      } catch (error) {
-        lastError = error;
-        if (!isRetryableError(error) || attempt === SHOPIFY_MAX_RETRIES) {
-          throw error;
-        }
-        const backoffMs = getBackoffMs(attempt);
-        console.warn(
-          `⚠️ Shopify 请求失败，准备重试(${attempt}/${SHOPIFY_MAX_RETRIES})，` +
-            `code=${error.code || "N/A"} status=${error.response?.status || "N/A"}，` +
-            `等待 ${backoffMs}ms`
-        );
-        await delay(backoffMs);
-      }
-    }
-
-    if (!response) {
-      throw lastError || new Error("Shopify 请求失败：未知错误");
-    }
-
-    if (response.data.errors) {
-      const time = new Date().toISOString();
-      const logLine = `【${time}】| 获取shopify订单失败 | 原因：${JSON.stringify(response.data.errors)}\n`;
-      appendToLog("logs", logType, logLine, "log");
-      throw new Error(`GraphQL 查询错误: ${JSON.stringify(response.data.errors, null, 2)}`);
-    }
+    const response = await executeOrdersQuery(apiUrl, graphqlQuery, "");
+    handleGraphQLErrors(response, "global", "订单");
 
     const data = response.data.data.orders;
-    // 过滤掉已取消的订单 (cancelledAt 不为 null 的)
-    // 同时手动过滤掉 compareField <= lastSyncTime 的订单，因为 Shopify 的 API 在处理时间精度时可能存在问题
     const orders = data.edges
       .map((edge) => edge.node)
       .filter((order) => {
-        // 1. 过滤已取消订单
         if (order.cancelledAt !== null) return false;
-
-        // 2. 过滤掉时间小于等于 lastSyncTime 的订单 (严格增量)
-        if (new Date(order?.[compareField]) <= new Date(lastSyncTime)) return false;
+        if (new Date(order.createdAt) <= new Date(lastSyncTime)) return false;
         return true;
       });
 
@@ -312,6 +361,39 @@ async function fetchOrdersPage(lastSyncTime, cursor = null, options = {}) {
   }
 }
 
+async function fetchRefundOrdersPage(lastSyncTime, cursor = null) {
+  validateConfig();
+  const apiUrl = getApiUrl();
+  const queryFilter = `updated_at:>'${lastSyncTime}'`;
+  const graphqlQuery = buildRefundOrdersQuery(queryFilter, cursor);
+
+  try {
+    const response = await executeOrdersQuery(apiUrl, graphqlQuery, "退款");
+    handleGraphQLErrors(response, "refund", "退款订单");
+
+    const data = response.data.data.orders;
+    const orders = data.edges
+      .map((edge) => edge.node)
+      .filter((order) => new Date(order.updatedAt) > new Date(lastSyncTime));
+
+    return {
+      orders,
+      pageInfo: data.pageInfo,
+    };
+  } catch (error) {
+    if (error.response) {
+      throw new Error(`API 请求失败: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+    }
+    if (error.code) {
+      throw new Error(
+        `API 网络请求失败: code=${error.code} address=${error.address || "N/A"} port=${error.port || "N/A"} message=${error.message}`
+      );
+    }
+    throw error;
+  }
+}
+
 module.exports = {
   fetchOrdersPage,
+  fetchRefundOrdersPage,
 };
