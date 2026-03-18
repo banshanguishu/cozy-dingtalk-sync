@@ -14,18 +14,16 @@ const TYPES_TO_SYNC = Object.entries(COLLECTION_MAP)
   .filter(([, config]) => config && config.sourceKeyWord && config.dingtalk_webhook)
   .map(([type]) => type);
 const GLOBAL_CURSOR_KEY = "global";
+const REFUND_CURSOR_KEY = "refund";
 
 // 简单的延时函数，防止 API 速率限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * 从订单列表中找出最大的 createdAt
- * @param {Array} orders
- */
-function getMaxCreatedAt(orders) {
+function getMaxFieldTime(orders, fieldName) {
   if (!orders || orders.length === 0) return null;
   return orders.reduce((max, order) => {
-    return !max || order.createdAt > max ? order.createdAt : max;
+    const current = order?.[fieldName];
+    return !current || (max && current <= max) ? max : current;
   }, null);
 }
 
@@ -35,20 +33,55 @@ function normalizeTypes(types) {
   return [types];
 }
 
-/**
- * 同步数据（单次拉取 + 分流处理）
- * @param {string|string[]} [types]
- */
-async function run(types) {
-  const targetTypes = normalizeTypes(types);
-  const hasExplicitTypes = Boolean(types);
+async function runRefundSync() {
+  const refundQueryTime = getLastSyncTime(REFUND_CURSOR_KEY);
+  console.log(`🚀 开始退款增量查询，上次退款同步时间点: 【${refundQueryTime}】`);
 
-  // 显式指定 type 时，才执行严格配置校验
-  if (hasExplicitTypes) {
-    validateRuntimeConfig(targetTypes);
+  let hasNext = true;
+  let cursor = null;
+  const refundOrders = [];
+
+  try {
+    while (hasNext) {
+      const { orders, pageInfo } = await fetchOrdersPage(refundQueryTime, cursor, {
+        queryField: "updated_at",
+        compareField: "updatedAt",
+        sortKey: "UPDATED_AT",
+        logType: REFUND_CURSOR_KEY,
+      });
+      refundOrders.push(...orders);
+
+      hasNext = pageInfo.hasNextPage === true;
+      if (hasNext) {
+        cursor = pageInfo.endCursor;
+        await delay(500);
+      } else {
+        break;
+      }
+    }
+
+    if (refundOrders.length === 0) {
+      console.log("✅ 本轮没有新增退款订单需要查询。");
+      return;
+    }
+
+    console.log(`✅ Shopify 退款增量订单拉取完成，共【${refundOrders.length}】条。`);
+    console.log("TODO(refund): 在这里补充退款记录字段构造与同步逻辑。");
+
+    const maxUpdatedAt = getMaxFieldTime(refundOrders, "updatedAt");
+    if (maxUpdatedAt) {
+      updateLastSyncTime(maxUpdatedAt, REFUND_CURSOR_KEY);
+      const refundLogLine = `【${new Date().toISOString()}】| 🔄 退款游标已更新至: ${maxUpdatedAt}\n`;
+      appendToLog("logs", REFUND_CURSOR_KEY, refundLogLine, "log");
+      console.log(`✅ 退款游标更新至【${maxUpdatedAt}】`);
+    }
+  } catch (error) {
+    console.error("❌ 退款查询任务异常终止:", error.message);
+    throw error;
   }
+}
 
-  // 1. 读取全局游标，作为本轮唯一查询基准
+async function runOrderSync(targetTypes) {
   const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
   console.log(`🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
 
@@ -59,7 +92,6 @@ async function run(types) {
   let usdToRmbRate = null;
 
   try {
-    // 2. 单次分页拉取 Shopify 增量订单
     while (hasNext) {
       pageCount++;
       const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor);
@@ -81,7 +113,6 @@ async function run(types) {
 
     console.log(`✅ Shopify 拉取完成，共【${allOriginOrders.length}】条增量订单，开始分流处理。`);
 
-    // secondary_order 仅在本轮查询一次汇率，避免重复请求
     if (targetTypes.includes("secondary_order")) {
       try {
         usdToRmbRate = await queryExchangeRate(undefined, "USD", "RMB");
@@ -91,7 +122,6 @@ async function run(types) {
       }
     }
 
-    // 3. 按 type 分流并复用现有构造/推送/日志逻辑
     for (const type of targetTypes) {
       const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
       console.log(`📮开始分流同步【${typeName}】的订单`);
@@ -111,8 +141,7 @@ async function run(types) {
       appendToLog("output", type, content, "jsonl");
     }
 
-    // 4. 整轮成功后，推进全局游标
-    const maxTime = getMaxCreatedAt(allOriginOrders);
+    const maxTime = getMaxFieldTime(allOriginOrders, "createdAt");
     if (maxTime) {
       updateLastSyncTime(maxTime, GLOBAL_CURSOR_KEY);
       const logLine = `【${new Date().toISOString()}】| 🔄 全局游标已更新至: ${maxTime}\n`;
@@ -123,6 +152,26 @@ async function run(types) {
     console.error("❌ 任务异常终止:", error.message);
     throw error;
   }
+}
+
+/**
+ * 同步数据（单次拉取 + 分流处理）
+ * @param {string|string[]} [types]
+ */
+async function run(types) {
+  const targetTypes = normalizeTypes(types);
+  const hasExplicitTypes = Boolean(types);
+  const refundOnly = targetTypes.length === 1 && targetTypes[0] === "refund";
+
+  // 显式指定 type 时，才执行严格配置校验
+  if (hasExplicitTypes) {
+    validateRuntimeConfig(targetTypes);
+  }
+
+  if (refundOnly) {
+    return runRefundSync();
+  }
+  return runOrderSync(targetTypes);
 }
 
 // 直接执行脚本时，支持可选 type 参数（兼容本地单类型调试）

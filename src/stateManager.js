@@ -1,8 +1,13 @@
 ﻿const fs = require("fs");
 const path = require("path");
 
-// 状态文件路径（统一使用项目根目录下的全局游标文件）
-const STATE_FILE = () => path.join(__dirname, "..", ".global_last_sync_time");
+// 状态文件路径
+function STATE_FILE(type) {
+  if (type === "refund") {
+    return path.join(__dirname, "..", ".global_refund_sync_time");
+  }
+  return path.join(__dirname, "..", ".global_last_sync_time");
+}
 
 /**
  * 确保文件的目录存在
@@ -21,7 +26,7 @@ function ensureDirExists(filePath) {
  */
 function getLastSyncTime(type) {
   try {
-    const stateFile = STATE_FILE();
+    const stateFile = STATE_FILE(type);
 
     // 确保目录存在
     ensureDirExists(stateFile);
@@ -51,7 +56,7 @@ function getLastSyncTime(type) {
 function updateLastSyncTime(time, type) {
   try {
     if (!time) return;
-    const stateFile = STATE_FILE();
+    const stateFile = STATE_FILE(type);
     // 确保目录存在
     ensureDirExists(stateFile);
     fs.writeFileSync(stateFile, time, "utf8");

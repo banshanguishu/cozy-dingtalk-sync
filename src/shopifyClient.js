@@ -45,12 +45,13 @@ function getApiUrl() {
  * 构建 GraphQL 查询语句
  * @param {string} queryFilter - 搜索过滤条件 (例如 "updated_at:>=2023-01-01")
  * @param {string|null} afterCursor - 分页游标
+ * @param {string} sortKey - 排序字段
  * @returns {string}
  */
-function buildQuery(queryFilter, afterCursor) {
+function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
   const args = [
     "first: 50", // 默认每页 50 条
-    "sortKey: CREATED_AT", // 默认按创建时间排序
+    `sortKey: ${sortKey}`, // 默认按创建时间排序
     "reverse: false", // 升序 (旧 -> 新)
     `query: "${queryFilter}"`,
   ];
@@ -114,6 +115,7 @@ function buildQuery(queryFilter, afterCursor) {
                 currencyCode
               }
             }
+            # TODO(refund): 在 refund 流程中补充 refunds / transactions / refundLineItems 等退款相关字段
             lineItems(first: 50) {
               edges {
                 node {
@@ -221,14 +223,19 @@ function buildQuery(queryFilter, afterCursor) {
  * 获取 Shopify 订单（分页模式）
  * @param {string} lastSyncTime - 上次同步时间 (ISO 8601)
  * @param {string|null} cursor - 分页游标
+ * @param {{queryField?: string, compareField?: string, sortKey?: string, logType?: string}} [options] - 查询配置
  * @returns {Promise<{orders: Array, pageInfo: Object}>}
  */
-async function fetchOrdersPage(lastSyncTime, cursor = null) {
+async function fetchOrdersPage(lastSyncTime, cursor = null, options = {}) {
   validateConfig();
   const apiUrl = getApiUrl();
+  const queryField = options.queryField || "created_at";
+  const compareField = options.compareField || "createdAt";
+  const sortKey = options.sortKey || "CREATED_AT";
+  const logType = options.logType || "global";
 
-  const queryFilter = `created_at:>'${lastSyncTime}'`;
-  const graphqlQuery = buildQuery(queryFilter, cursor);
+  const queryFilter = `${queryField}:>'${lastSyncTime}'`;
+  const graphqlQuery = buildQuery(queryFilter, cursor, sortKey);
 
   try {
     let response = null;
@@ -270,13 +277,13 @@ async function fetchOrdersPage(lastSyncTime, cursor = null) {
     if (response.data.errors) {
       const time = new Date().toISOString();
       const logLine = `【${time}】| 获取shopify订单失败 | 原因：${JSON.stringify(response.data.errors)}\n`;
-      appendToLog("logs", "global", logLine, "log");
+      appendToLog("logs", logType, logLine, "log");
       throw new Error(`GraphQL 查询错误: ${JSON.stringify(response.data.errors, null, 2)}`);
     }
 
     const data = response.data.data.orders;
     // 过滤掉已取消的订单 (cancelledAt 不为 null 的)
-    // 同时手动过滤掉 createdAt <= lastSyncTime 的订单，因为 Shopify 的 API 在处理时间精度时可能存在问题
+    // 同时手动过滤掉 compareField <= lastSyncTime 的订单，因为 Shopify 的 API 在处理时间精度时可能存在问题
     const orders = data.edges
       .map((edge) => edge.node)
       .filter((order) => {
@@ -284,7 +291,7 @@ async function fetchOrdersPage(lastSyncTime, cursor = null) {
         if (order.cancelledAt !== null) return false;
 
         // 2. 过滤掉时间小于等于 lastSyncTime 的订单 (严格增量)
-        if (new Date(order.createdAt) <= new Date(lastSyncTime)) return false;
+        if (new Date(order?.[compareField]) <= new Date(lastSyncTime)) return false;
         return true;
       });
 

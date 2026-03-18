@@ -81,6 +81,10 @@ const COLLECTION_MAP = {
     sourceKeyWord: DINGTALK_OTHERS_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_OTHERS,
   },
+  refund: {
+    name: "Refund",
+    cnName: "退款",
+  },
   secondary_order: {
     name: "Secondary Order",
     cnName: "二级订单",
