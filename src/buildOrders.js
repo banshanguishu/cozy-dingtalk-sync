@@ -425,11 +425,10 @@ const buildRefundOrders = (orders, refundCursor, type = "refund") => {
     const cursorTime = refundCursor ? new Date(refundCursor) : null;
 
     for (const order of orders) {
-      const refundEdges = order?.refunds?.edges || [];
-      if (!Array.isArray(refundEdges) || refundEdges.length === 0) continue;
+      const refunds = order?.refunds || [];
+      if (!Array.isArray(refunds) || refunds.length === 0) continue;
 
-      for (const edge of refundEdges) {
-        const refund = edge?.node;
+      for (const refund of refunds) {
         if (!refund?.createdAt) continue;
 
         const refundCreatedAt = new Date(refund.createdAt);

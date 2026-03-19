@@ -244,20 +244,16 @@ function buildRefundOrdersQuery(queryFilter, afterCursor) {
             id
             name
             updatedAt
-            refunds(first: 50) {
-              edges {
-                node {
-                  id
-                  legacyResourceId
-                  createdAt
-                  updatedAt
-                  note
-                  totalRefundedSet {
-                    shopMoney {
-                      amount
-                      currencyCode
-                    }
-                  }
+            refunds {
+              id
+              legacyResourceId
+              createdAt
+              updatedAt
+              note
+              totalRefundedSet {
+                shopMoney {
+                  amount
+                  currencyCode
                 }
               }
             }

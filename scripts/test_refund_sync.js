@@ -26,20 +26,16 @@ query($id: ID!) {
     id
     name
     updatedAt
-    refunds(first: 50) {
-      edges {
-        node {
-          id
-          legacyResourceId
-          createdAt
-          updatedAt
-          note
-          totalRefundedSet {
-            shopMoney {
-              amount
-              currencyCode
-            }
-          }
+    refunds {
+      id
+      legacyResourceId
+      createdAt
+      updatedAt
+      note
+      totalRefundedSet {
+        shopMoney {
+          amount
+          currencyCode
         }
       }
     }
@@ -174,6 +170,7 @@ async function main() {
     type: DEFAULT_TYPE,
     refundCursor: refundCursor || null,
     syncEnabled: sync,
+    rawOrder: order,
     matchedCount: builtRefunds.length,
     builtOrders: builtRefunds,
   };
