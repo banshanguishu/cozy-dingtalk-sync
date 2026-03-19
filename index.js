@@ -93,13 +93,11 @@ async function runOrderSync(targetTypes) {
 
   let hasNext = true;
   let cursor = null;
-  let pageCount = 0;
   const allOriginOrders = [];
   let usdToRmbRate = null;
 
   try {
     while (hasNext) {
-      pageCount++;
       const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor);
       allOriginOrders.push(...originOrders);
 

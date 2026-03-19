@@ -441,6 +441,7 @@ const buildRefundOrders = (orders, refundCursor, type = "refund") => {
           orderId: order.id || "/",
           orderName: order.name || "/",
           name: order.name || "/",
+          productType: "退款",
           refundTime: refund.createdAt,
           refundAmount: refund?.totalRefundedSet?.shopMoney?.amount || "0",
           refundCurrency: refund?.totalRefundedSet?.shopMoney?.currencyCode || "/",

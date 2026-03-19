@@ -268,7 +268,8 @@ function buildRefundOrdersQuery(queryFilter, afterCursor) {
   `;
 }
 
-async function executeOrdersQuery(apiUrl, graphqlQuery, requestLabel) {
+async function executeOrdersQuery(graphqlQuery, requestLabel) {
+  const apiUrl = getApiUrl();
   let response = null;
   let lastError = null;
 
@@ -309,14 +310,15 @@ async function executeOrdersQuery(apiUrl, graphqlQuery, requestLabel) {
 }
 
 function handleGraphQLErrors(response, logType, logLabel) {
-  if (!response.data.errors) {
+  const graphqlErrors = response?.data?.errors;
+  if (!graphqlErrors) {
     return;
   }
 
   const time = new Date().toISOString();
-  const logLine = `【${time}】| 获取shopify${logLabel}失败 | 原因：${JSON.stringify(response.data.errors)}\n`;
+  const logLine = `【${time}】| 获取shopify${logLabel}失败 | 原因：${JSON.stringify(graphqlErrors)}\n`;
   appendToLog("logs", logType, logLine, "log");
-  throw new Error(`GraphQL 查询错误: ${JSON.stringify(response.data.errors, null, 2)}`);
+  throw new Error(`GraphQL 查询错误: ${JSON.stringify(graphqlErrors, null, 2)}`);
 }
 
 /**
@@ -327,12 +329,11 @@ function handleGraphQLErrors(response, logType, logLabel) {
  */
 async function fetchOrdersPage(lastSyncTime, cursor = null) {
   validateConfig();
-  const apiUrl = getApiUrl();
   const queryFilter = `created_at:>'${lastSyncTime}'`;
   const graphqlQuery = buildQuery(queryFilter, cursor, "CREATED_AT");
 
   try {
-    const response = await executeOrdersQuery(apiUrl, graphqlQuery, "");
+    const response = await executeOrdersQuery(graphqlQuery, "");
     handleGraphQLErrors(response, "global", "订单");
 
     const data = response.data.data.orders;
@@ -363,12 +364,11 @@ async function fetchOrdersPage(lastSyncTime, cursor = null) {
 
 async function fetchRefundOrdersPage(lastSyncTime, cursor = null) {
   validateConfig();
-  const apiUrl = getApiUrl();
   const queryFilter = `updated_at:>'${lastSyncTime}'`;
   const graphqlQuery = buildRefundOrdersQuery(queryFilter, cursor);
 
   try {
-    const response = await executeOrdersQuery(apiUrl, graphqlQuery, "退款");
+    const response = await executeOrdersQuery(graphqlQuery, "退款");
     handleGraphQLErrors(response, "refund", "退款订单");
 
     const data = response.data.data.orders;
