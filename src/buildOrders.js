@@ -434,14 +434,17 @@ const buildRefundOrders = (orders, refundCursor, type = "refund") => {
         const refundCreatedAt = new Date(refund.createdAt);
         if (cursorTime && refundCreatedAt <= cursorTime) continue;
 
+        const normalizedOrderName = getOrderNumber(order.name || "/");
+
         result.push({
           refundId: refund.id || "/",
           legacyRefundId: refund.legacyResourceId || "/",
           orderId: order.id || "/",
-          orderName: order.name || "/",
-          name: order.name || "/",
+          orderName: normalizedOrderName,
+          name: normalizedOrderName,
           productType: "退款",
           refundTime: refund.createdAt,
+          refundDate: refund.createdAt.slice(0, 10),
           refundAmount: refund?.totalRefundedSet?.shopMoney?.amount || "0",
           refundCurrency: refund?.totalRefundedSet?.shopMoney?.currencyCode || "/",
           refundNote: refund.note || "/",

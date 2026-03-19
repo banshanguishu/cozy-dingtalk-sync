@@ -5,6 +5,7 @@
     "orderName": "string",
     "productType": "string",
     "refundTime": "string",
+    "refundDate": "string",
     "refundAmount": "string",
     "refundCurrency": "string",
     "refundNote": "string",
