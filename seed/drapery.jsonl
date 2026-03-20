@@ -12,6 +12,7 @@
     "shippingAddress": "string",
     "quantity": "number",
     "collection": "string",
+    "discountCode": "string",
     "color": "string",
     "width": "number",
     "length": "number",

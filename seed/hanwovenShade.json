@@ -12,6 +12,7 @@
     "shippingAddress": "string",
     "quantity": "number",
     "collection": "string",
+    "discountCode": "string",
     "color": "string",
     "liftType": "string",
     "cordColor": "string",

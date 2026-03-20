@@ -58,6 +58,7 @@ const buildThirdItem = (type, customAttributes, node) => {
   if (type === "drapery") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
+      discountCode,
       color: customAttributes["Color"] || node.variantTitle || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
@@ -72,6 +73,7 @@ const buildThirdItem = (type, customAttributes, node) => {
   } else if (type === "roman_shade") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
+      discountCode,
       color: customAttributes["Color"] || node.variantTitle || "/",
       width: calculateDimension(customAttributes["Shade Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Shade Length (inch)"], customAttributes["Length Fraction (optional)"]),
@@ -121,6 +123,7 @@ const buildThirdItem = (type, customAttributes, node) => {
   } else if (type === "hanwoven_shade") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
+      discountCode,
       color: customAttributes["Color"] || node.variantTitle || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordColor: customAttributes["Cord Style"] || "/",
