@@ -24,9 +24,18 @@
 - 返回规则：接口响应 `code === 200` 时返回 `rate` 数值，否则返回 `null`。
 - 支持 CLI 直接运行：`node src/exchangeRate.js [dateString] [currency] [targetCurrency]`。
 
+## 当前调度与 refund 约定
+- `scheduler.js` 使用单一 `setInterval` 轮询。
+- 每轮按顺序执行：先 `run()` 普通订单同步，再 `run("refund")` 退款同步。
+- 普通订单与 refund 使用同一个 `SYNC_INTERVAL_MINUTES`。
+- refund 使用独立游标文件 `.global_refund_sync_time`。
+- refund 外层候选订单按 `updated_at` 查询，内层新退款按 `refund.createdAt` 判断。
+
 ## 当前目录结构（简版）
 ```
 cozy-dingtalk-sync/
+├── .global_last_sync_time
+├── .global_refund_sync_time
 ├── AGENTS.md
 ├── README.md
 ├── VIBE_CODING.md
@@ -39,6 +48,7 @@ cozy-dingtalk-sync/
 ├── package.json
 ├── scripts/
 │   ├── test_fetch_single_order.js
+│   ├── test_refund_sync.js
 │   └── test_single_order_sync.js
 ├── seed/
 │   ├── drapery.jsonl
@@ -48,6 +58,7 @@ cozy-dingtalk-sync/
 │   ├── rollerBlind.json
 │   ├── otherShade.json
 │   ├── others.json
+│   ├── refund.json
 │   └── secondaryOrder.json
 ├── src/
 │   ├── buildOrders.js

@@ -22,6 +22,7 @@
   "trimColor": "string",
   "remote": "string",
   "hub": "string",
+  "installMethod": "string",
   "cordColor": "string",
   "cordPosition": "string",
   "roomDescription": "string",

@@ -83,6 +83,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       trimColor: customAttributes["Trim Color"] || "/",
       remote: customAttributes["Remote Control"] || "/",
       hub: customAttributes["Select Connect"] || "/",
+      installMethod: customAttributes["Installation Method"] || "/",
       cordColor: customAttributes["Cord Style"] || "/",
       cordPosition: customAttributes["Cord Loop Position"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
