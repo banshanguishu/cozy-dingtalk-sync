@@ -11,3 +11,4 @@ services:
       - ./logs:/app/logs
       - ./output:/app/output
       - ./.global_last_sync_time:/app/.global_last_sync_time
+      - ./.global_refund_sync_time:/app/.global_refund_sync_time
