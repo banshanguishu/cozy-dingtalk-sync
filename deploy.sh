@@ -18,6 +18,9 @@ fi
 if [ ! -f ./.global_refund_sync_time ]; then
   touch ./.global_refund_sync_time
 fi
+if [ ! -f ./.global_refund_scan_time ]; then
+  touch ./.global_refund_scan_time
+fi
 
 echo "Deploying with docker-compose..."
 docker-compose pull

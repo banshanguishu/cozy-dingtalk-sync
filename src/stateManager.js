@@ -6,6 +6,9 @@ function STATE_FILE(type) {
   if (type === "refund") {
     return path.join(__dirname, "..", ".global_refund_sync_time");
   }
+  if (type === "refund_scan") {
+    return path.join(__dirname, "..", ".global_refund_scan_time");
+  }
   return path.join(__dirname, "..", ".global_last_sync_time");
 }
 
@@ -24,18 +27,20 @@ function ensureDirExists(filePath) {
  * 读取上次同步的时间游标
  * @returns {string} ISO 8601 时间字符串
  */
-function getLastSyncTime(type) {
+function getLastSyncTime(type, defaultTime) {
   try {
     const stateFile = STATE_FILE(type);
 
     // 确保目录存在
     ensureDirExists(stateFile);
 
+    const fallbackTime =
+      defaultTime && !isNaN(Date.parse(defaultTime)) ? defaultTime : new Date().toISOString().split(".")[0] + "Z";
+
     // 如果文件不存在，创建并写入当前时间
     if (!fs.existsSync(stateFile)) {
-      const now = new Date().toISOString().split(".")[0] + "Z";
-      fs.writeFileSync(stateFile, now, "utf8");
-      return now;
+      fs.writeFileSync(stateFile, fallbackTime, "utf8");
+      return fallbackTime;
     }
 
     const time = fs.readFileSync(stateFile, "utf8").trim();
@@ -43,10 +48,12 @@ function getLastSyncTime(type) {
     if (time && !isNaN(Date.parse(time))) {
       return time;
     }
+    fs.writeFileSync(stateFile, fallbackTime, "utf8");
+    return fallbackTime;
   } catch (error) {
     console.warn("读取状态文件失败，使用默认时间:", error.message);
   }
-  return new Date().toISOString();
+  return defaultTime && !isNaN(Date.parse(defaultTime)) ? defaultTime : new Date().toISOString();
 }
 
 /**
