@@ -20,5 +20,6 @@
   "runnerType": "string",
   "powerType": "string",
   "holdbackStyle": "string",
+  "roomDescription": "string",
   "source": "string"
 }

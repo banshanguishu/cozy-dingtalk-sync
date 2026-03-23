@@ -1,4 +1,5 @@
 ﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
+const { formatWestCoastDate } = require("./utils");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
 const FREE_SWATCHES_COLLECTION_ID = "499489243454";
@@ -120,6 +121,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       runnerType: customAttributes["Runner Type"] || "/",
       powerType: customAttributes["Power Type"] || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",
+      roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   } else if (type === "hanwoven_shade") {
     return {
@@ -316,7 +318,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
       const parentName = getOrderNumber(o.name);
       const commonField = {
         parentName, // 一级单号
-        createAt: (o.createdAt || "").split("T")[0], // 订单创建时间
+        createAt: formatWestCoastDate(o.createdAt) || "/", // 订单创建时间（美西时间）
         usdToRmbRate, // 当前同步轮次汇率
         customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
         phone: o?.shippingAddress?.phone || "/", // 客户电话
@@ -448,7 +450,7 @@ const buildRefundOrders = (orders, refundCursor, type = "refund") => {
           name: normalizedOrderName,
           productType: "退款",
           refundTime: refund.createdAt,
-          refundDate: refund.createdAt.slice(0, 10),
+          refundDate: formatWestCoastDate(refund.createdAt) || "/",
           refundAmount: refund?.totalRefundedSet?.shopMoney?.amount || "0",
           refundCurrency: refund?.totalRefundedSet?.shopMoney?.currencyCode || "/",
           refundNote: refund.note || "/",

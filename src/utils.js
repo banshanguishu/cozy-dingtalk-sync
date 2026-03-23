@@ -29,9 +29,10 @@ const formatWestCoastDate = (createdAt) => {
   return formatter.format(date);
 };
 
-const utc = "2026-03-20T01:27:22Z"
-const westCoastDate = formatWestCoastDate(utc)
-console.log(westCoastDate)
+// 测试用例
+// const utc = "2026-03-20T01:27:22Z"
+// const westCoastDate = formatWestCoastDate(utc)
+// console.log(westCoastDate)
 
 module.exports = {
   formatWestCoastDate,
