@@ -1,6 +1,5 @@
 const axios = require("axios");
 const { COLLECTION_MAP } = require("./mapping/collectionMap");
-const { highlightTerminalContent } = require("./utlis");
 const { appendToLog } = require("./fileManager");
 require("dotenv").config();
 

@@ -68,7 +68,7 @@ cozy-dingtalk-sync/
 │   ├── fileManager.js
 │   ├── shopifyClient.js
 │   ├── stateManager.js
-│   ├── utlis.js
+│   ├── utils.js
 │   └── mapping/
 │       └── collectionMap.js
 ```
