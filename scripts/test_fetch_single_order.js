@@ -9,7 +9,8 @@ require("dotenv").config();
 // 在此处替换为您要查询的订单 ID
 // const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
 // const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
-const ORDER_ID = "gid://shopify/Order/6443830116670";
+// const ORDER_ID = "gid://shopify/Order/6831120023870"; // drapery 4172
+const ORDER_ID = "gid://shopify/Order/6829961019710";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 

@@ -54,7 +54,23 @@ const buildThirdItem = (type, customAttributes, node) => {
   // 折扣码
   let discountCode = "/";
   if (node.discountAllocations && node.discountAllocations.length > 0) {
-    discountCode = node.discountAllocations[0].discountApplication?.title;
+    const discountCodes = node.discountAllocations
+      .map((item) => {
+        const discountApplication = item.discountApplication || {};
+        const { __typename, code, title } = discountApplication;
+        if (__typename === "DiscountCodeApplication") {
+          return code || title || "";
+        }
+        if (__typename === "AutomaticDiscountApplication" || __typename === "ManualDiscountApplication") {
+          return title || code || "";
+        }
+        return code || title || "";
+      })
+      .filter(Boolean);
+
+    if (discountCodes.length > 0) {
+      discountCode = [...new Set(discountCodes)].join(";");
+    }
   }
   if (type === "drapery") {
     return {
@@ -199,7 +215,8 @@ const buildThirdOrders = (orders, type) => {
         if (node.customAttributes?.length) {
           node.customAttributes.forEach(({ key, value }) => {
             const k = key.trim();
-            customAttributes[k] = value;
+            const v = typeof value === "string" ? value.trim() : value;
+            customAttributes[k] = v;
           });
         }
 
