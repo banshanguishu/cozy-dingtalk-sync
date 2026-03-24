@@ -8,20 +8,26 @@ const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION }
 
 /**
  * 用法：
- * node scripts/sync_drapery_history.js
- * node scripts/sync_drapery_history.js --sync
+ * node scripts/sync_drapery_history.js <type>
+ * node scripts/sync_drapery_history.js <type> --sync
  */
 
-const SYNC_TYPE = "drapery";
-const HISTORY_LOG_TYPE = "drapery_history";
-
-// 历史同步开始时间，格式示例：2026-03-01T00:00:00Z
-const START_CREATED_AT = "2024-06-20T01:49:25Z";
-// 历史同步结束时间，格式示例：2026-03-31T23:59:59Z
-const END_CREATED_AT = "2025-07-17T03:37:23Z";
-
-const DINGTALK_WEBHOOK_URL = "https://connector.dingtalk.com/webhook/flow/1037e8a3d5802132f5d7000i";
-const DINGTALK_SOURCE_KEYWORD = "drapery_history_sync";
+const HISTORY_SYNC_CONFIG = {
+  drapery: {
+    historyLogType: "drapery_history",
+    startCreatedAt: "2024-06-20T01:49:25Z",
+    endCreatedAt: "2025-07-17T03:37:23Z",
+    dingtalkWebhookUrl: "https://connector.dingtalk.com/webhook/flow/1037e8a3d5802132f5d7000i",
+    dingtalkSourceKeyword: "drapery_history_sync",
+  },
+  roman_shade: {
+    historyLogType: "roman_shade_history",
+    startCreatedAt: "",
+    endCreatedAt: "",
+    dingtalkWebhookUrl: "",
+    dingtalkSourceKeyword: "",
+  },
+};
 
 const RANGE_QUERY = `
 query($query: String!, $after: String) {
@@ -168,22 +174,30 @@ query($query: String!, $after: String) {
 
 function parseArgs(argv) {
   const args = argv.slice(2);
+  let syncType = "";
   let sync = false;
 
   for (const arg of args) {
     if (arg === "--sync") {
       sync = true;
+      continue;
+    }
+    if (!syncType) {
+      syncType = arg;
     }
   }
-  return { sync };
+  return { syncType, sync };
 }
 
-function validateEnv() {
+function validateEnv(selectedConfig) {
   if (!SHOPIFY_STORE_URL || !SHOPIFY_ADMIN_API_ACCESS_TOKEN) {
     throw new Error("缺少环境变量 SHOPIFY_STORE_URL 或 SHOPIFY_ADMIN_API_ACCESS_TOKEN");
   }
-  if (!START_CREATED_AT || !END_CREATED_AT) {
-    throw new Error("请先填写脚本顶部的 START_CREATED_AT 和 END_CREATED_AT");
+  if (!selectedConfig) {
+    throw new Error(`未知 type，请传入: ${Object.keys(HISTORY_SYNC_CONFIG).join(", ")}`);
+  }
+  if (!selectedConfig.startCreatedAt || !selectedConfig.endCreatedAt) {
+    throw new Error("请先填写脚本顶部对应 type 的 startCreatedAt 和 endCreatedAt");
   }
 }
 
@@ -253,9 +267,9 @@ async function fetchOrdersByCreatedAtRange(startCreatedAt, endCreatedAt) {
   };
 }
 
-async function syncBuiltOrdersToDingTalk(builtOrders) {
-  if (!DINGTALK_WEBHOOK_URL) {
-    throw new Error("请先填写脚本顶部的 DINGTALK_WEBHOOK_URL");
+async function syncBuiltOrdersToDingTalk(builtOrders, selectedConfig) {
+  if (!selectedConfig.dingtalkWebhookUrl) {
+    throw new Error("请先填写脚本顶部对应 type 的 dingtalkWebhookUrl");
   }
 
   let successCount = 0;
@@ -265,16 +279,21 @@ async function syncBuiltOrdersToDingTalk(builtOrders) {
     const orderName = order.thirdName || order.parentName || "Unknown";
 
     try {
-      await axios.post(DINGTALK_WEBHOOK_URL, order, {
+      await axios.post(selectedConfig.dingtalkWebhookUrl, order, {
         headers: { "Content-Type": "application/json" },
       });
       successCount++;
-      appendToLog("logs", HISTORY_LOG_TYPE, `【${new Date().toISOString()}】 | 三级单号：${orderName} | 结果：同步成功\n`, "log");
+      appendToLog(
+        "logs",
+        selectedConfig.historyLogType,
+        `【${new Date().toISOString()}】 | 三级单号：${orderName} | 结果：同步成功\n`,
+        "log"
+      );
     } catch (error) {
       failCount++;
       appendToLog(
         "logs",
-        HISTORY_LOG_TYPE,
+        selectedConfig.historyLogType,
         `【${new Date().toISOString()}】 | 三级单号：${orderName} | 结果：同步失败 | 原因：${error.message}\n`,
         "log"
       );
@@ -285,35 +304,36 @@ async function syncBuiltOrdersToDingTalk(builtOrders) {
 }
 
 async function main() {
-  const { sync } = parseArgs(process.argv);
+  const { syncType, sync } = parseArgs(process.argv);
+  const selectedConfig = HISTORY_SYNC_CONFIG[syncType];
 
-  validateEnv();
+  validateEnv(selectedConfig);
 
-  console.log(`🚀 开始执行 ${SYNC_TYPE} 历史数据同步`);
-  console.log(`🕒 开始时间: ${START_CREATED_AT}`);
-  console.log(`🕒 结束时间: ${END_CREATED_AT}`);
+  console.log(`🚀 开始执行 ${syncType} 历史数据同步`);
+  console.log(`🕒 开始时间: ${selectedConfig.startCreatedAt}`);
+  console.log(`🕒 结束时间: ${selectedConfig.endCreatedAt}`);
   console.log(`📮 实际推送: ${sync ? "开启" : "关闭"}`);
 
-  const startCreatedAt = START_CREATED_AT;
-  const endCreatedAt = END_CREATED_AT;
+  const startCreatedAt = selectedConfig.startCreatedAt;
+  const endCreatedAt = selectedConfig.endCreatedAt;
   const { orders: originOrders, cancelledOrderCount } = await fetchOrdersByCreatedAtRange(startCreatedAt, endCreatedAt);
   console.log(`✅ 命中时间区间订单数: ${originOrders.length}`);
   console.log(`ℹ️ 时间区间内被过滤的取消订单数: ${cancelledOrderCount}`);
 
-  const builtOrders = buildThirdOrders(originOrders, SYNC_TYPE).map((item) => ({
+  const builtOrders = buildThirdOrders(originOrders, syncType).map((item) => ({
     ...item,
-    source: DINGTALK_SOURCE_KEYWORD || item.source || "",
+    source: selectedConfig.dingtalkSourceKeyword || item.source || "",
   }));
 
-  console.log(`✅ 构造出的 ${SYNC_TYPE} 订单数: ${builtOrders.length}`);
+  console.log(`✅ 构造出的 ${syncType} 订单数: ${builtOrders.length}`);
 
   if (!builtOrders.length) {
-    console.log("✅ 当前区间内没有需要同步的 drapery 订单。");
+    console.log(`✅ 当前区间内没有需要同步的 ${syncType} 订单。`);
     return;
   }
 
   const content = builtOrders.map((item) => JSON.stringify(item)).join("\n") + "\n";
-  appendToLog("output", HISTORY_LOG_TYPE, content, "jsonl");
+  appendToLog("output", selectedConfig.historyLogType, content, "jsonl");
 
   if (!sync) {
     console.log("ℹ️ 当前为仅构造模式，未推送到钉钉。");
@@ -327,7 +347,7 @@ async function main() {
     return;
   }
 
-  const { successCount, failCount } = await syncBuiltOrdersToDingTalk(builtOrders);
+  const { successCount, failCount } = await syncBuiltOrdersToDingTalk(builtOrders, selectedConfig);
   console.log(`✅ ${successCount}, ❌ ${failCount}`);
 }
 
