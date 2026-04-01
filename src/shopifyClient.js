@@ -115,7 +115,19 @@ function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
                 currencyCode
               }
             }
-            # TODO(refund): 在 refund 流程中补充 refunds / transactions / refundLineItems 等退款相关字段
+            transactions {
+              id
+              paymentId
+              gateway
+              kind
+              status
+              amountSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+            }
             lineItems(first: 50) {
               edges {
                 node {

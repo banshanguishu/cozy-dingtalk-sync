@@ -56,6 +56,19 @@ query($id: ID!) {
         currencyCode
       }
     }
+    transactions {
+      id
+      paymentId
+      gateway
+      kind
+      status
+      amountSet {
+        shopMoney {
+          amount
+          currencyCode
+        }
+      }
+    }
     lineItems(first: 50) {
       edges {
         node {

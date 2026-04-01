@@ -319,6 +319,26 @@ const roundTo2 = (num) => {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 };
 
+const getGiftCardDeductionAmount = (order) => {
+  const transactions = Array.isArray(order?.transactions) ? order.transactions : [];
+  if (transactions.length === 0) return 0;
+
+  const seenPaymentIds = new Set();
+
+  return transactions.reduce((sum, transaction) => {
+    if (transaction?.gateway !== "gift_card") return sum;
+    if (transaction?.status !== "SUCCESS") return sum;
+    if (transaction?.kind !== "CAPTURE") return sum;
+
+    const paymentId = transaction?.paymentId;
+    if (!paymentId || seenPaymentIds.has(paymentId)) return sum;
+    seenPaymentIds.add(paymentId);
+
+    const amount = Number(transaction?.amountSet?.shopMoney?.amount);
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+};
+
 /* 构造二级订单对象 */
 const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null) => {
   try {
@@ -378,9 +398,10 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
       // 新规则：先按“订单商品总价池（订单总价-运费）”按类别原总价比例分摊折后价
       const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
       const shipFee = Number(o?.totalShippingPriceSet?.shopMoney?.amount);
+      const giftCardDeductionAmount = getGiftCardDeductionAmount(o);
       const safeOrderTotalPrice = Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0;
       const safeShipFee = Number.isFinite(shipFee) ? shipFee : 0;
-      const goodsTotalPrice = safeOrderTotalPrice - safeShipFee;
+      const goodsTotalPrice = safeOrderTotalPrice - safeShipFee - giftCardDeductionAmount;
 
       const groupedEntries = Object.entries(groupedByCollection);
       const orderOriginalTotalSum = groupedEntries.reduce((sum, [, item]) => {

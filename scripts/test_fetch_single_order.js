@@ -10,7 +10,7 @@ require("dotenv").config();
 // const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
 // const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
 // const ORDER_ID = "gid://shopify/Order/6831120023870"; // drapery 4172
-const ORDER_ID = "gid://shopify/Order/6496999539006";
+const ORDER_ID = "gid://shopify/Order/6842652361022";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -71,6 +71,22 @@ query($id: ID!) {
       shopMoney {
         amount
         currencyCode
+      }
+    }
+    transactions {
+      id
+      kind
+      status
+      gateway
+      formattedGateway
+      paymentId
+      createdAt
+      processedAt
+      amountSet {
+        shopMoney {
+          amount
+          currencyCode
+        }
       }
     }
     discountApplications(first: 20) {
