@@ -22,10 +22,17 @@ const HISTORY_SYNC_CONFIG = {
   },
   roman_shade: {
     historyLogType: "roman_shade_history",
-    startCreatedAt: "2024-06-20T01:49:25",
+    startCreatedAt: "2024-06-20T01:49:25Z",
     endCreatedAt: "2025-08-24T01:29:22Z",
     dingtalkWebhookUrl: "https://connector.dingtalk.com/webhook/flow/1037ed3644de0bfb41a40006",
     dingtalkSourceKeyword: "roman_shade_history_sync",
+  },
+  hanwoven_shade: {
+    historyLogType: "hanwoven_shade_history",
+    startCreatedAt: "2024-06-20T01:49:25Z",
+    endCreatedAt: "2026-01-19T21:56:04Z",
+    dingtalkWebhookUrl: "https://connector.dingtalk.com/webhook/flow/103810ada35d212c9123000o",
+    dingtalkSourceKeyword: "woven_shade_history_sync",
   },
 };
 
