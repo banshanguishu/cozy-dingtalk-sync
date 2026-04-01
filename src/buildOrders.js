@@ -134,6 +134,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       sizeSku: getColorOrLenthSku("Length (inch)"),
       capStyle: customAttributes["Cap Style"] || "/",
       bracketStyle: customAttributes["Bracket Style"] || "/",
+      size: customAttributes["Size"] || "/",
       runnerType: customAttributes["Runner Type"] || "/",
       powerType: customAttributes["Power Type"] || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",

@@ -17,6 +17,7 @@
   "sizeSku": "number",
   "capStyle": "string",
   "bracketStyle": "string",
+  "size": "string",
   "runnerType": "string",
   "powerType": "string",
   "holdbackStyle": "string",
