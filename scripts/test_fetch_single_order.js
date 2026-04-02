@@ -10,7 +10,7 @@ require("dotenv").config();
 // const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
 // const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
 // const ORDER_ID = "gid://shopify/Order/6831120023870"; // drapery 4172
-const ORDER_ID = "gid://shopify/Order/6842652361022";
+const ORDER_ID = "gid://shopify/Order/6748573860158";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -38,6 +38,13 @@ query($id: ID!) {
     createdAt
     # 支付状态 (例如: PAID, PENDING, REFUNDED)
     displayFinancialStatus
+    # 拒付状态相关
+    disputes {
+      id
+      status
+      initiatedAs
+      initiatedAs
+    }
     # 发货状态 (例如: FULFILLED, UNFULFILLED)
     displayFulfillmentStatus
     # 取消时间 (如果不为空，则表示已取消)
@@ -73,6 +80,7 @@ query($id: ID!) {
         currencyCode
       }
     }
+    # 交易流程信息
     transactions {
       id
       kind
