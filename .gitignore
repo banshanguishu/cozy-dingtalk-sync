@@ -20,7 +20,10 @@ Thumbs.db
 # IDE 配置
 .vscode/
 .idea/
-.claude/
+
+# Claude Code: 仅忽略 .local. 结尾的个人本地配置（settings.local.json 等），
+# 共享配置（settings.json / skills/ / agents/ / commands/）随 repo 进版本管理
+.claude/**/*.local.*
 
 .prod.*
 
