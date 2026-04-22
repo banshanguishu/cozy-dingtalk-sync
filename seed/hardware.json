@@ -21,6 +21,7 @@
   "runnerType": "string",
   "powerType": "string",
   "holdbackStyle": "string",
+  "mountingType": "string",
   "roomDescription": "string",
   "source": "string"
 }

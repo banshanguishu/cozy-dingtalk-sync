@@ -138,6 +138,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       runnerType: customAttributes["Runner Type"] || "/",
       powerType: customAttributes["Power Type"] || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",
+      mountingType: customAttributes["Mounting Type"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   } else if (type === "hanwoven_shade") {
