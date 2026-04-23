@@ -3,6 +3,9 @@ const { formatWestCoastDate } = require("./utils");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
 const FREE_SWATCHES_COLLECTION_ID = "499489243454";
+// others 分支需要额外排除的伪商品 title：仅当 lineItem 的 product 为 null（即 Shopify 后台没有对应商品、
+// 是结账时临时添加的自定义收费条目）且 title 命中本名单时才剔除，避免误伤真实 Shopify 商品恰好叫同名的情况
+const OTHERS_EXCLUDE_PSEUDO_TITLES = new Set(["Tip"]);
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -206,9 +209,11 @@ const buildThirdOrders = (orders, type) => {
         // 根据商品的所属合集是否包含我们要查询的 type集合类型 来判断该商品是不是符合要求的。
         // 商品有一个collections集合，如果里面存在对应type（通过id判断）的collection，则这个商品是需要返回的商品
         const collectionIds = (node?.product?.collections?.edges || []).map((coll) => coll?.node?.id || "");
+        const isPseudoExcludedItem = !node.product && OTHERS_EXCLUDE_PSEUDO_TITLES.has(node.title);
         const isTargetTypeProduct =
           type === "others"
-            ? !collectionIds.some((id) => OTHERS_FALLBACK_BASE_COLLECTION_IDS.some((baseId) => id.endsWith(baseId)))
+            ? !isPseudoExcludedItem &&
+              !collectionIds.some((id) => OTHERS_FALLBACK_BASE_COLLECTION_IDS.some((baseId) => id.endsWith(baseId)))
             : collectionIds.some((id) => id.endsWith(targetTypeId));
         if (!isTargetTypeProduct) continue;
 
