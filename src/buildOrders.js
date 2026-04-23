@@ -226,38 +226,6 @@ const buildThirdOrders = (orders, type) => {
           });
         }
 
-        const address2Keys = ["city", "provinceCode", "zip"];
-        const getShippingAddress = (addressInfo) => {
-          const info = addressInfo && typeof addressInfo === "object" ? addressInfo : {};
-          const lines = [];
-
-          const normalize = (val) => {
-            if (val === null || val === undefined) return "";
-            const str = String(val).trim();
-            return str;
-          };
-
-          const addIfHasValue = (val) => {
-            const v = normalize(val);
-            if (v) lines.push(v);
-          };
-
-          addIfHasValue(info.name);
-          addIfHasValue(info.address1);
-
-          const address2ByParts = address2Keys
-            .map((k) => normalize(info[k]))
-            .filter(Boolean)
-            .join(" ");
-          const address2 = address2ByParts || normalize(info.address2);
-          addIfHasValue(address2);
-
-          addIfHasValue(info.country);
-          addIfHasValue(info.phone);
-
-          return lines.join("\n");
-        };
-
         // 公共字段，从最外层s订单对象身上获取，即一级订单的信息
         const customerFirstName = (o.customer?.firstName || "").trim();
         const customerLastName = (o.customer?.lastName || "").trim();
@@ -274,10 +242,6 @@ const buildThirdOrders = (orders, type) => {
           note: o.note || "/",
           customerName: customerName, // 客户名称
           email: o.email || "/", // 客户邮箱
-          shippingAddress: getShippingAddress({
-            ...(o.shippingAddress || {}),
-            phone: o.customer?.phone || o.shippingAddress?.phone,
-          }),
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
         const thirdOrderField = buildThirdItem(type, customAttributes, node);
