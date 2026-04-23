@@ -1,8 +1,7 @@
-﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG } = require("./mapping/collectionMap");
+﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG, FREE_SWATCHES_COLLECTION_ID } = require("./mapping/collectionMap");
 const { formatWestCoastDate } = require("./utils");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
-const FREE_SWATCHES_COLLECTION_ID = "499489243454";
 // others 分支需要额外排除的伪商品 title：仅当 lineItem 的 product 为 null（即 Shopify 后台没有对应商品、
 // 是结账时临时添加的自定义收费条目）且 title 命中本名单时才剔除，避免误伤真实 Shopify 商品恰好叫同名的情况
 const OTHERS_EXCLUDE_PSEUDO_TITLES = new Set(["Tip"]);

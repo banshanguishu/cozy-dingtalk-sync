@@ -21,6 +21,8 @@ const {
   DINGTALK_WEBHOOK_URL_REFUND,
 } = process.env;
 
+const FREE_SWATCHES_COLLECTION_ID = "499489243454";
+
 const COLLECTION_MAP = {
   drapery: {
     id: "474551189822",
@@ -47,7 +49,7 @@ const COLLECTION_MAP = {
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_HARDWARE,
   },
   free_swatches: {
-    id: "499489243454",
+    id: FREE_SWATCHES_COLLECTION_ID,
     name: "Free Swatches",
     cnName: "样品",
     suffix: "-X",
@@ -116,4 +118,5 @@ module.exports = {
   COLLECTION_TYPE_NAMES,
   COLLECTION_TYPE_NAMES_DEV,
   COLLECTION_ID_MAP_CONFIG,
+  FREE_SWATCHES_COLLECTION_ID,
 };
