@@ -10,7 +10,7 @@ require("dotenv").config();
 // const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
 // const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
 // const ORDER_ID = "gid://shopify/Order/6831120023870"; // drapery 4172
-const ORDER_ID = "gid://shopify/Order/6748573860158";
+const ORDER_ID = "gid://shopify/Order/6880161956158";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -73,8 +73,15 @@ query($id: ID!) {
         currencyCode
       }
     }
-    # 总运费价格
+    # 总运费价格（原始）
     totalShippingPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
+    }
+    # 总运费价格（参与过运费折扣）
+    currentShippingPriceSet {
       shopMoney {
         amount
         currencyCode

@@ -56,6 +56,12 @@ query($id: ID!) {
         currencyCode
       }
     }
+    currentShippingPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
+    }
     transactions {
       id
       paymentId

@@ -403,10 +403,14 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
 
       // 新规则：先按“订单商品总价池（订单总价-运费）”按类别原总价比例分摊折后价
       const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
-      const shipFee = Number(o?.totalShippingPriceSet?.shopMoney?.amount);
+      // 折后运费：客户实际支付的运费，与 totalPriceSet 同口径，用于分摊和样品 totalPrice 加挂
+      const shipFee = Number(o?.currentShippingPriceSet?.shopMoney?.amount);
+      // 折前运费：订单名义运费（未扣运费折扣），仅用于纯样品单的 originalTotalPrice 展示
+      const rawShipFee = Number(o?.totalShippingPriceSet?.shopMoney?.amount);
       const giftCardDeductionAmount = getGiftCardDeductionAmount(o);
       const safeOrderTotalPrice = Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0;
       const safeShipFee = Number.isFinite(shipFee) ? shipFee : 0;
+      const safeRawShipFee = Number.isFinite(rawShipFee) ? rawShipFee : 0;
       const goodsTotalPrice = safeOrderTotalPrice - safeShipFee - giftCardDeductionAmount;
 
       const groupedEntries = Object.entries(groupedByCollection);
@@ -441,8 +445,17 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
       }
 
       // 分摊完成后，运费特殊加在样品类别（free swatches）上
-      if (Number.isFinite(shipFee) && Object.hasOwn(groupedByCollection, FREE_SWATCHES_COLLECTION_ID)) {
-        groupedByCollection[FREE_SWATCHES_COLLECTION_ID].totalPrice = roundTo2(groupedByCollection[FREE_SWATCHES_COLLECTION_ID].totalPrice + shipFee);
+      if (Object.hasOwn(groupedByCollection, FREE_SWATCHES_COLLECTION_ID)) {
+        const swatchesGroup = groupedByCollection[FREE_SWATCHES_COLLECTION_ID];
+        // 折后运费加入样品组 totalPrice（客户实际支付的运费）
+        if (Number.isFinite(shipFee)) {
+          swatchesGroup.totalPrice = roundTo2(swatchesGroup.totalPrice + safeShipFee);
+        }
+        // 纯样品单：名义运费加入 originalTotalPrice，避免原总价展示为 0 误导
+        const onlySwatches = Object.keys(groupedByCollection).length === 1;
+        if (onlySwatches && Number.isFinite(rawShipFee)) {
+          swatchesGroup.originalTotalPrice = roundTo2(swatchesGroup.originalTotalPrice + safeRawShipFee);
+        }
       }
 
       for (const [productCollectionId, item] of Object.entries(groupedByCollection)) {

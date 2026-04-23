@@ -115,6 +115,12 @@ function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
                 currencyCode
               }
             }
+            currentShippingPriceSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
+            }
             transactions {
               id
               paymentId
