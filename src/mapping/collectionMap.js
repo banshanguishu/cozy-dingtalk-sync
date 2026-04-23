@@ -72,7 +72,7 @@ const COLLECTION_MAP = {
     id: "497516085566",
     name: "Roller Blind",
     cnName: "卷帘",
-    suffix: "-R",
+    suffix: "-S",
     sourceKeyWord: DINGTALK_ROLLERBLIND_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROLLERBLIND,
   },
