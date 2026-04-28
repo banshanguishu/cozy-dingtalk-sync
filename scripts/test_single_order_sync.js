@@ -4,7 +4,7 @@ const path = require("path");
 const dotenv = require("dotenv");
 require("dotenv").config();
 
-const { buildThirdOrders, buildSecondOrders } = require("../src/buildOrders");
+const { buildThirdOrders, buildSecondOrders, buildPrimaryOrders } = require("../src/buildOrders");
 const { queryExchangeRate } = require("../src/exchangeRate");
 const { COLLECTION_MAP } = require("../src/mapping/collectionMap");
 
@@ -254,6 +254,9 @@ async function buildByType(order, type) {
     }
     return { builtOrders: buildSecondOrders([order], type, usdToRmbRate), usdToRmbRate };
   }
+  if (type === "primary_order") {
+    return { builtOrders: buildPrimaryOrders([order], type), usdToRmbRate: null };
+  }
   return { builtOrders: buildThirdOrders([order], type), usdToRmbRate: null };
 }
 
@@ -274,7 +277,7 @@ async function syncBuiltOrdersToDingTalk(builtOrders, type) {
       successCount++;
     } catch (error) {
       failCount++;
-      console.error(`❌ 钉钉同步失败: ${order.thirdName || order.parentName || "Unknown"} | ${error.message}`);
+      console.error(`❌ 钉钉同步失败: ${order.thirdName || order.parentName || order.name || "Unknown"} | ${error.message}`);
     }
   }
 
@@ -298,6 +301,7 @@ function getTestWebhookByType(type) {
     other_shade: "DINGTALK_WEBHOOK_URL_OTHERSHADE",
     others: "DINGTALK_WEBHOOK_URL_OTHERS",
     secondary_order: "DINGTALK_WEBHOOK_URL_SECONDARYORDER",
+    primary_order: "DINGTALK_WEBHOOK_URL_PRIMARYORDER",
   };
   const key = typeToWebhookEnvKey[type];
   if (!key) return "";

@@ -3,7 +3,7 @@ const { fetchOrdersPage, fetchRefundOrdersPage } = require("./src/shopifyClient"
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
-const { buildThirdOrders, buildSecondOrders, buildRefundOrders } = require("./src/buildOrders");
+const { buildThirdOrders, buildSecondOrders, buildRefundOrders, buildPrimaryOrders } = require("./src/buildOrders");
 const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
 const { queryExchangeRate } = require("./src/exchangeRate");
@@ -140,8 +140,14 @@ async function runOrderSync(targetTypes) {
       const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
       console.log(`📮开始分流同步【${typeName}】的订单`);
 
-      const buildedOrder =
-        type === "secondary_order" ? buildSecondOrders(allOriginOrders, type, usdToRmbRate) : buildThirdOrders(allOriginOrders, type);
+      let buildedOrder;
+      if (type === "secondary_order") {
+        buildedOrder = buildSecondOrders(allOriginOrders, type, usdToRmbRate);
+      } else if (type === "primary_order") {
+        buildedOrder = buildPrimaryOrders(allOriginOrders, type);
+      } else {
+        buildedOrder = buildThirdOrders(allOriginOrders, type);
+      }
 
       if (!buildedOrder || buildedOrder.length === 0) {
         console.log(`✅ 没有需要同步的【${typeName}】订单`);

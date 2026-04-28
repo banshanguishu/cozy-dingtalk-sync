@@ -28,9 +28,10 @@ function validateRuntimeConfig(targetTypes) {
     const config = COLLECTION_MAP[type];
     if (!config) continue;
 
-    // secondary_order / others / refund 不是按固定 collection id 匹配，不校验 id
-    const isNoCollectionIdType = type === "secondary_order" || type === "others" || type === "refund";
-    const isNoSuffixType = type === "secondary_order" || type === "refund";
+    // secondary_order / others / refund / primary_order 不是按固定 collection id 匹配，不校验 id
+    const isNoCollectionIdType =
+      type === "secondary_order" || type === "others" || type === "refund" || type === "primary_order";
+    const isNoSuffixType = type === "secondary_order" || type === "refund" || type === "primary_order";
 
     if (!isNoCollectionIdType && !hasText(config.id)) {
       errors.push(`Type "${type}" missing collection id`);

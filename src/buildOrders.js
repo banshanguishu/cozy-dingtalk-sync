@@ -442,6 +442,45 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
   }
 };
 
+/* 构造一级订单对象：每张订单一条记录，productType 为该订单内出现过的所有产品类型中文名（去重） */
+const buildPrimaryOrders = (orders, type = "primary_order") => {
+  try {
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+      return [];
+    }
+
+    const { sourceKeyWord: targetTypeSource } = COLLECTION_MAP[type] || {};
+    const result = [];
+
+    for (const o of orders) {
+      if (!o.lineItems?.edges || !Array.isArray(o.lineItems.edges) || o.lineItems.edges.length === 0) continue;
+
+      const productTypeSet = new Set();
+      for (const chil of o.lineItems.edges) {
+        const node = chil.node || {};
+        if (isRemoved(node)) continue;
+        const productCollectionId = getProductCollectionId(node?.product?.collections?.edges);
+        const cnName = productCollectionId === "other" ? "其他" : COLLECTION_ID_MAP_CONFIG[productCollectionId]?.cnName;
+        if (cnName) productTypeSet.add(cnName);
+      }
+
+      const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
+      result.push({
+        name: getOrderNumber(o.name),
+        productType: Array.from(productTypeSet),
+        email: o?.email || "/",
+        orderTotalPrice: Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0,
+        source: targetTypeSource,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
 const buildRefundOrders = (orders, refundCursor, type = "refund") => {
   try {
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
@@ -492,4 +531,5 @@ module.exports = {
   buildThirdOrders,
   buildSecondOrders,
   buildRefundOrders,
+  buildPrimaryOrders,
 };

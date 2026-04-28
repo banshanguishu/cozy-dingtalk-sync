@@ -19,6 +19,8 @@ const {
   DINGTALK_WEBHOOK_URL_OTHERS,
   DINGTALK_REFUND_KEYWORD,
   DINGTALK_WEBHOOK_URL_REFUND,
+  DINGTALK_PRIMARYORDER_KEYWORD,
+  DINGTALK_WEBHOOK_URL_PRIMARYORDER,
 } = process.env;
 
 const FREE_SWATCHES_COLLECTION_ID = "499489243454";
@@ -96,6 +98,12 @@ const COLLECTION_MAP = {
     cnName: "二级订单",
     sourceKeyWord: DINGTALK_SECONDARYORDER_KEYWORD,
     dingtalk_webhook: DINGTALK_WEBHOOK_URL_SECONDARYORDER,
+  },
+  primary_order: {
+    name: "Primary Order",
+    cnName: "一级订单",
+    sourceKeyWord: DINGTALK_PRIMARYORDER_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_PRIMARYORDER,
   },
 };
 
