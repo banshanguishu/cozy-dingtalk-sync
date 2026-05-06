@@ -9,7 +9,6 @@
   "note": "string",
   "customerName": "string",
   "email": "string",
-  "shippingAddress": "string",
   "quantity": "number",
   "collection": "string",
   "discountCode": "string",

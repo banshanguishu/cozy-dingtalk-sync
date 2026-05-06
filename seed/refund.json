@@ -3,6 +3,7 @@
     "legacyRefundId": "string",
     "orderId": "string",
     "orderName": "string",
+    "name": "string",
     "productType": "string",
     "refundTime": "string",
     "refundDate": "string",
