@@ -9,7 +9,6 @@
   "note": "string",
   "customerName": "string",
   "email": "string",
-  "shippingAddress": "string",
   "quantity": "number",
   "productName": "string",
   "discountCode": "string",
@@ -22,6 +21,8 @@
   "powerType": "string",
   "holdbackStyle": "string",
   "mountingType": "string",
+  "rings": "string",
+  "bendPositions": "string",
   "roomDescription": "string",
   "source": "string"
 }
