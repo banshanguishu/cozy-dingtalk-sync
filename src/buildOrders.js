@@ -2,9 +2,13 @@
 const { formatWestCoastDate } = require("./utils");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
-// others 分支需要额外排除的伪商品 title：仅当 lineItem 的 product 为 null（即 Shopify 后台没有对应商品、
-// 是结账时临时添加的自定义收费条目）且 title 命中本名单时才剔除，避免误伤真实 Shopify 商品恰好叫同名的情况
-const OTHERS_EXCLUDE_PSEUDO_TITLES = new Set(["Tip"]);
+// 伪商品 lineItem title 白名单：lineItem 的 product 为 null（Shopify 后台没有对应商品，
+// 结账时临时添加的自定义收费条目）且 title 命中本名单时视为伪商品。
+// 用途：buildThirdOrders 的 others 分支直接剔除；buildSecondOrders 的 Tip 独立成行、不参与金额分摊
+const PSEUDO_LINE_ITEM_TITLES = new Set(["Tip"]);
+const isPseudoLineItem = (node) => !node?.product && PSEUDO_LINE_ITEM_TITLES.has(node?.title);
+// buildSecondOrders 中用于隔离 Tip 等伪商品的分组键，避免和 getProductCollectionId 返回的 "other" 撞车
+const SECOND_TIP_GROUP_KEY = "pseudo_tip";
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -211,7 +215,7 @@ const buildThirdOrders = (orders, type) => {
         // 根据商品的所属合集是否包含我们要查询的 type集合类型 来判断该商品是不是符合要求的。
         // 商品有一个collections集合，如果里面存在对应type（通过id判断）的collection，则这个商品是需要返回的商品
         const collectionIds = (node?.product?.collections?.edges || []).map((coll) => coll?.node?.id || "");
-        const isPseudoExcludedItem = !node.product && OTHERS_EXCLUDE_PSEUDO_TITLES.has(node.title);
+        const isPseudoExcludedItem = isPseudoLineItem(node);
         const isTargetTypeProduct =
           type === "others"
             ? !isPseudoExcludedItem &&
@@ -350,13 +354,14 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         // 如果没有 product 信息，可能表示是已移除的商品，直接跳过
         if (isRemoved(node)) continue;
 
-        // 获取当前商品的系列ID
-        const productCollectionId = getProductCollectionId(node?.product?.collections?.edges);
-        // const productCollectionId = (node?.product?.collections?.edges?.[0]?.node?.id || "").split("/").pop();
-        // if (!COLLECTION_TYPE_IDS.includes(productCollectionId)) continue;
+        // 伪商品（如 Tip）路由到独立分组键，后续不参与金额分摊；
+        // 真实商品继续按系列归组
+        const groupKey = isPseudoLineItem(node)
+          ? SECOND_TIP_GROUP_KEY
+          : getProductCollectionId(node?.product?.collections?.edges);
 
-        if (!groupedByCollection[productCollectionId]) {
-          groupedByCollection[productCollectionId] = {
+        if (!groupedByCollection[groupKey]) {
+          groupedByCollection[groupKey] = {
             originalTotalPrice: 0,
             totalPrice: 0,
             productNames: [],
@@ -364,11 +369,11 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
-        if (!Number.isNaN(originAmount)) groupedByCollection[productCollectionId].originalTotalPrice += originAmount;
-        if (node?.title) groupedByCollection[productCollectionId].productNames.push(node.title);
+        if (!Number.isNaN(originAmount)) groupedByCollection[groupKey].originalTotalPrice += originAmount;
+        if (node?.title) groupedByCollection[groupKey].productNames.push(node.title);
       }
 
-      // 新规则：先按“订单商品总价池（订单总价-运费）”按类别原总价比例分摊折后价
+      // 新规则：先按“订单商品总价池（订单总价 - 运费 - 礼品卡抵扣 - Tip）”按类别原总价比例分摊折后价
       const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
       // 折后运费：客户实际支付的运费，与 totalPriceSet 同口径，用于分摊和样品 totalPrice 加挂
       const shipFee = Number(o?.currentShippingPriceSet?.shopMoney?.amount);
@@ -378,19 +383,27 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
       const safeOrderTotalPrice = Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0;
       const safeShipFee = Number.isFinite(shipFee) ? shipFee : 0;
       const safeRawShipFee = Number.isFinite(rawShipFee) ? rawShipFee : 0;
-      const goodsTotalPrice = safeOrderTotalPrice - safeShipFee - giftCardDeductionAmount;
+      // Tip 是顾客额外打赏，与折扣码无关：金额、原总价、商品池统统从分摊口径里剔除
+      const tipGroup = groupedByCollection[SECOND_TIP_GROUP_KEY];
+      const tipTotal = tipGroup ? (Number(tipGroup.originalTotalPrice) || 0) : 0;
+      const goodsTotalPrice = safeOrderTotalPrice - safeShipFee - giftCardDeductionAmount - tipTotal;
 
       const groupedEntries = Object.entries(groupedByCollection);
-      const orderOriginalTotalSum = groupedEntries.reduce((sum, [, item]) => {
+      const allocatableEntries = groupedEntries.filter(([key]) => key !== SECOND_TIP_GROUP_KEY);
+      const orderOriginalTotalSum = allocatableEntries.reduce((sum, [, item]) => {
         const original = Number(item?.originalTotalPrice);
         return Number.isFinite(original) ? sum + original : sum;
       }, 0);
 
-      const positiveOriginalEntries = groupedEntries.filter(([, item]) => (Number(item?.originalTotalPrice) || 0) > 0);
+      const positiveOriginalEntries = allocatableEntries.filter(([, item]) => (Number(item?.originalTotalPrice) || 0) > 0);
 
-      // 先将每个类别 totalPrice 初始化为 0，符合“原总价为0则折后价直接为0”的要求
-      for (const [, item] of groupedEntries) {
-        item.totalPrice = 0;
+      // 初始化各类别 totalPrice：Tip 组直接等于 originalTotalPrice，其余先置 0，符合“原总价为0则折后价直接为0”
+      for (const [key, item] of groupedEntries) {
+        if (key === SECOND_TIP_GROUP_KEY) {
+          item.totalPrice = roundTo2(Number(item.originalTotalPrice) || 0);
+        } else {
+          item.totalPrice = 0;
+        }
       }
 
       if (orderOriginalTotalSum > 0 && positiveOriginalEntries.length > 0) {
@@ -419,14 +432,19 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           swatchesGroup.totalPrice = roundTo2(swatchesGroup.totalPrice + safeShipFee);
         }
         // 纯样品单：名义运费加入 originalTotalPrice，避免原总价展示为 0 误导
-        const onlySwatches = Object.keys(groupedByCollection).length === 1;
+        // 判断时排除 Tip 组：Tip 与是否为纯样品单无关
+        const onlySwatches = Object.keys(groupedByCollection).filter((key) => key !== SECOND_TIP_GROUP_KEY).length === 1;
         if (onlySwatches && Number.isFinite(rawShipFee)) {
           swatchesGroup.originalTotalPrice = roundTo2(swatchesGroup.originalTotalPrice + safeRawShipFee);
         }
       }
 
       for (const [productCollectionId, item] of Object.entries(groupedByCollection)) {
-        const productType = productCollectionId === "other" ? "其他" : COLLECTION_ID_MAP_CONFIG[productCollectionId]?.cnName;
+        // Tip 组与 "other" 组在二级表里都展示为 "其他"，但作为独立行输出
+        const productType =
+          productCollectionId === SECOND_TIP_GROUP_KEY || productCollectionId === "other"
+            ? "其他"
+            : COLLECTION_ID_MAP_CONFIG[productCollectionId]?.cnName;
         if (!productType) continue;
         result.push({
           ...commonField,
