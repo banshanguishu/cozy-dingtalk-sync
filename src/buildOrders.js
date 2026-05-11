@@ -484,12 +484,15 @@ const buildPrimaryOrders = (orders, type = "primary_order") => {
         if (cnName) productTypeSet.add(cnName);
       }
 
+      // 礼品卡是商家自身信用抵扣、并非实际现金收入，应从订单总价中剔除
       const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
+      const safeOrderTotalPrice = Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0;
+      const giftCardDeductionAmount = getGiftCardDeductionAmount(o);
       result.push({
         name: getOrderNumber(o.name),
         productType: Array.from(productTypeSet),
         email: o?.email || "/",
-        orderTotalPrice: Number.isFinite(orderTotalPrice) ? orderTotalPrice : 0,
+        orderTotalPrice: roundTo2(safeOrderTotalPrice - giftCardDeductionAmount),
         source: targetTypeSource,
       });
     }
