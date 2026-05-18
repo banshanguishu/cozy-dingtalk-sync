@@ -156,7 +156,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       discountCode,
       color: customAttributes["Color"] || node.variantTitle || "/",
       liftType: customAttributes["Lift Type"] || "/",
-      cordColor: customAttributes["Cord Style"] || "/",
+      cordColor: customAttributes["Cord Color"] || "/",
       cordLoopPosition: customAttributes["Cord Loop Position"] || "/",
       width: calculateDimension(customAttributes["Shade Width (inches)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Shade Length (inches)"], customAttributes["Length Fraction (optional)"]),
