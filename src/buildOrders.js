@@ -172,6 +172,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       liftType: customAttributes["Lift Type"] || "/",
       cordedOptions: customAttributes["Corded Options"] || "/",
       cordLoopPosition: customAttributes["Cord Loop Positions"] || "/",
+      rollDirection: customAttributes["Roll Direction"] || "/",
       width: calculateDimension(customAttributes["Shade Width (inches)"], customAttributes["Width Fraction (optional)"]),
       height: calculateDimension(customAttributes["Shade Length (inches)"], customAttributes["Length Fraction (optional)"]),
       remoteControl: customAttributes["Remote Control"] || "/",

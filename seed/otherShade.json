@@ -14,6 +14,7 @@
   "liftType": "string",
   "cordedOptions": "string",
   "cordLoopPosition": "string",
+  "rollDirection": "string",
   "width": "number",
   "height": "number",
   "remoteControl": "string",
