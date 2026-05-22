@@ -124,14 +124,6 @@ const buildThirdItem = (type, customAttributes, node) => {
         const t = node.variant.selectedOptions.find((item) => item.name === type);
         if (t) return t.value;
       }
-      if (node.variantTitle || node.variant.title) {
-        const tle = node.variantTitle || node.variant.title;
-        if (tle.includes("/")) {
-          const split = tle.split("/");
-          return type === "Color" ? split[0] : split[1];
-        }
-        return "/";
-      }
       return "/";
     };
     return {
@@ -139,7 +131,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       discountCode,
       colorSku: getColorOrLenthSku("Color"),
       sizeSku: getColorOrLenthSku("Length (inch)"),
-      capStyle: customAttributes["Cap Style"] || "/",
+      capStyle: getColorOrLenthSku("Cap Style"),
       bracketStyle: customAttributes["Bracket Style"] || "/",
       size: customAttributes["Size"] || "/",
       runnerType: customAttributes["Runner Type"] || "/",
