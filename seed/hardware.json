@@ -23,6 +23,7 @@
   "mountingType": "string",
   "rings": "string",
   "bendPositions": "string",
+  "panelConfiguration": "string",
   "roomDescription": "string",
   "source": "string"
 }
