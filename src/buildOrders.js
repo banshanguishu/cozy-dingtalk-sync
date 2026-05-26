@@ -81,7 +81,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
       discountCode,
-      color: customAttributes["Color"] || node.variantTitle || "/",
+      color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
       // header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
@@ -97,7 +97,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
-      color: customAttributes["Color"] || node.variantTitle || "/",
+      color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Shade Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Shade Length (inch)"], customAttributes["Length Fraction (optional)"]),
       liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
@@ -113,17 +113,21 @@ const buildThirdItem = (type, customAttributes, node) => {
     };
   } else if (type === "hardware") {
     const getColorOrLenthSku = (type) => {
-      if (customAttributes[type]) {
-        if (type === "Length (inch)") {
-          return calculateDimension(customAttributes[type], customAttributes["Length Fraction (optional)"]) || "";
+      // Shopify 字段可能带前后空格，统一对字符串返回值 trim；数值（calculateDimension 结果）保持原样
+      const raw = (() => {
+        if (customAttributes[type]) {
+          if (type === "Length (inch)") {
+            return calculateDimension(customAttributes[type], customAttributes["Length Fraction (optional)"]) || "";
+          }
+          return customAttributes[type];
         }
-        return customAttributes[type];
-      }
-      if (node.variant.selectedOptions.length > 0) {
-        const t = node.variant.selectedOptions.find((item) => item.name === type);
-        if (t) return t.value;
-      }
-      return "/";
+        if (node.variant.selectedOptions.length > 0) {
+          const t = node.variant.selectedOptions.find((item) => item.name === type);
+          if (t) return t.value;
+        }
+        return "/";
+      })();
+      return typeof raw === "string" ? raw.trim() : raw;
     };
     return {
       productName: node.title || node.product?.title || "/",
@@ -146,7 +150,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
-      color: customAttributes["Color"] || node.variantTitle || "/",
+      color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordColor: customAttributes["Cord Color"] || "/",
       cordLoopPosition: customAttributes["Cord Loop Position"] || "/",
@@ -160,7 +164,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     };
   } else if (type === "roller_blind" || type === "other_shade") {
     return {
-      color: customAttributes["Color"] || node.variantTitle || "/",
+      color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordedOptions: customAttributes["Corded Options"] || "/",
       cordLoopPosition: customAttributes["Cord Loop Positions"] || "/",
