@@ -54,30 +54,29 @@ const getOrderNumber = (name = "") => {
   return name.startsWith("#") ? name.slice(1) : name;
 };
 
+/* 从 lineItem 的 discountAllocations 提取折扣码/标题；保留原始顺序、不去重，由调用方决定如何聚合 */
+const extractLineItemDiscountCodes = (node) => {
+  if (!node?.discountAllocations || node.discountAllocations.length === 0) return [];
+  return node.discountAllocations
+    .map((item) => {
+      const discountApplication = item.discountApplication || {};
+      const { __typename, code, title } = discountApplication;
+      if (__typename === "DiscountCodeApplication") {
+        return code || title || "";
+      }
+      if (__typename === "AutomaticDiscountApplication" || __typename === "ManualDiscountApplication") {
+        return title || code || "";
+      }
+      return code || title || "";
+    })
+    .filter(Boolean);
+};
+
 /* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
 const buildThirdItem = (type, customAttributes, node) => {
   if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) return null;
-  // 折扣码
-  let discountCode = "/";
-  if (node.discountAllocations && node.discountAllocations.length > 0) {
-    const discountCodes = node.discountAllocations
-      .map((item) => {
-        const discountApplication = item.discountApplication || {};
-        const { __typename, code, title } = discountApplication;
-        if (__typename === "DiscountCodeApplication") {
-          return code || title || "";
-        }
-        if (__typename === "AutomaticDiscountApplication" || __typename === "ManualDiscountApplication") {
-          return title || code || "";
-        }
-        return code || title || "";
-      })
-      .filter(Boolean);
-
-    if (discountCodes.length > 0) {
-      discountCode = [...new Set(discountCodes)].join(";");
-    }
-  }
+  const itemDiscountCodes = extractLineItemDiscountCodes(node);
+  const discountCode = itemDiscountCodes.length > 0 ? [...new Set(itemDiscountCodes)].join(";") : "/";
   if (type === "drapery") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
@@ -331,7 +330,6 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
         phone: o?.shippingAddress?.phone || "/", // 客户电话
         email: o?.email || "/", // 客户邮箱
-        discountCode: o?.discountCode || "/", // 折扣码
         address1: o?.shippingAddress?.address1 || "/", // 详细地址
         zip: o?.shippingAddress?.zip || "/", // 邮编
         city: o?.shippingAddress?.city || "/", // 城市
@@ -359,12 +357,17 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
             originalTotalPrice: 0,
             totalPrice: 0,
             productNames: [],
+            discountCodes: new Set(),
           };
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
         if (!Number.isNaN(originAmount)) groupedByCollection[groupKey].originalTotalPrice += originAmount;
         if (node?.title) groupedByCollection[groupKey].productNames.push(node.title);
+        // 折扣码按 lineItem 收集到本组 Set，输出时去重 join——每组一条记录、每组独立的折扣码集合
+        for (const code of extractLineItemDiscountCodes(node)) {
+          groupedByCollection[groupKey].discountCodes.add(code);
+        }
       }
 
       // 新规则：先按“订单商品总价池（订单总价 - 运费 - 礼品卡抵扣 - Tip）”按类别原总价比例分摊折后价
@@ -446,6 +449,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           totalPrice: item.totalPrice,
           productType,
           productNames: item.productNames?.length ? item.productNames.join("；") : "/",
+          discountCode: item.discountCodes?.size > 0 ? [...item.discountCodes].join(";") : "/",
         });
       }
     }
