@@ -21,6 +21,9 @@ fi
 if [ ! -f ./.global_refund_scan_time ]; then
   touch ./.global_refund_scan_time
 fi
+if [ ! -f ./.global_exchange_rate_cache ]; then
+  touch ./.global_exchange_rate_cache
+fi
 
 echo "Deploying with docker-compose..."
 docker-compose pull
