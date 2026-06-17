@@ -6,7 +6,7 @@ const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
 const { buildThirdOrders, buildSecondOrders, buildRefundOrders, buildPrimaryOrders } = require("./src/buildOrders");
 const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
 const { validateRuntimeConfig } = require("./src/configValidator");
-const { queryExchangeRate } = require("./src/exchangeRate");
+const { resolveUsdToRmbRate } = require("./src/exchangeRate");
 
 // 默认同步类型（由 run 内部统一驱动）
 // 从映射中自动收集已完成同步配置的 type，避免新增类型时遗漏
@@ -129,7 +129,7 @@ async function runOrderSync(targetTypes) {
 
     if (targetTypes.includes("secondary_order")) {
       try {
-        usdToRmbRate = await queryExchangeRate(undefined, "USD", "RMB");
+        usdToRmbRate = await resolveUsdToRmbRate();
         console.log(`💱 本轮 USD->RMB 汇率: ${usdToRmbRate}`);
       } catch (error) {
         console.warn(`⚠️ 汇率查询失败，本轮 secondary_order 将使用空汇率: ${error.message}`);

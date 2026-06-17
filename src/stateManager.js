@@ -72,7 +72,46 @@ function updateLastSyncTime(time, type) {
   }
 }
 
+// 汇率缓存文件：按日期存储成功取到的汇率（{ "2026-06-17": 7.18 }），docker 单文件挂载持久化
+const EXCHANGE_RATE_CACHE_FILE = path.join(__dirname, "..", ".global_exchange_rate_cache");
+
+/**
+ * 读取按日期存储的汇率缓存 map
+ * @returns {Record<string, number>} 读取失败 / 文件为空时返回 {}
+ */
+function getExchangeRateMap() {
+  try {
+    if (!fs.existsSync(EXCHANGE_RATE_CACHE_FILE)) return {};
+    const raw = fs.readFileSync(EXCHANGE_RATE_CACHE_FILE, "utf8").trim();
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("读取汇率缓存失败:", error.message);
+    return {};
+  }
+}
+
+/**
+ * 写入某天的汇率（仅在 rate 为有效数值时写入，null 不落盘）
+ * @param {string} date - 日期，格式示例：2026-06-17
+ * @param {number} rate
+ */
+function updateExchangeRateForDate(date, rate) {
+  try {
+    if (!date || rate == null || !Number.isFinite(Number(rate))) return;
+    ensureDirExists(EXCHANGE_RATE_CACHE_FILE);
+    const map = getExchangeRateMap();
+    map[date] = Number(rate);
+    fs.writeFileSync(EXCHANGE_RATE_CACHE_FILE, JSON.stringify(map), "utf8");
+  } catch (error) {
+    console.error("更新汇率缓存失败:", error.message);
+  }
+}
+
 module.exports = {
   getLastSyncTime,
   updateLastSyncTime,
+  getExchangeRateMap,
+  updateExchangeRateForDate,
 };
