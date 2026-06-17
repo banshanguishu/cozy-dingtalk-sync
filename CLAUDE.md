@@ -28,27 +28,31 @@ node scripts/sync_drapery_history.js <type> [--sync]
 # 给指定 webhook 发固定 payload（调通流程用）
 node scripts/push_to_dingtalk.js
 
+# 汇率缓存 + 回退逻辑单元测试（内置 node:test，无新增依赖，不打真实接口）
+node --test scripts/test_exchange_rate.js
+
 # Docker 构建 / 部署（内网镜像仓库 192.168.1.252:15000）
 ./build_and_push.bat      # Windows 本地构建推送
 ./deploy.sh               # 服务器拉镜像 + docker-compose up
 ```
 
-仓库里没有自动化测试（`npm test` 是占位），验证靠 `scripts/` 下的手工脚本。`--sync` 标志会真的往钉钉发，不加只做 dry-run 打印；测试脚本的 webhook 从 `.env.test.local` 读，和生产 `.env` 分离，修改时注意别混。
+`npm test` 仍是占位；目前仅 `scripts/test_exchange_rate.js` 是真正的自动化单测（内置 `node:test`，stub 掉 `axios.post`、读写真实缓存文件前后备份还原），其余验证靠 `scripts/` 下的手工脚本。`--sync` 标志会真的往钉钉发，不加只做 dry-run 打印；测试脚本的 webhook 从 `.env.test.local` 读，和生产 `.env` 分离，修改时注意别混。
 
 ## 架构关键点
 
 **单次拉取，多路分流**。`index.js` 的 `runOrderSync` 只调一次 Shopify `orders(query: "created_at:>...")` 分页拿全量增量订单，然后对 `targetTypes` 里的每个类型分别用 `buildThirdOrders` / `buildSecondOrders` 重塑结构后推钉钉。新增类型不需要额外拉数，只需要在 `COLLECTION_MAP` 里补 `id` / `sourceKeyWord` / `dingtalk_webhook` / `suffix`，`TYPES_TO_SYNC` 会自动把同时配好 `sourceKeyWord` 和 `dingtalk_webhook` 的条目纳入默认范围。
 
-**游标与 refund 的双游标**。三个状态文件都在仓库根目录、被 docker-compose 以单文件挂载进容器，别当普通缓存删：
+**游标与 refund 的双游标**。四个状态文件都在仓库根目录、被 docker-compose 以单文件挂载进容器，别当普通缓存删：
 - `.global_last_sync_time` — 普通订单，推进用 `order.createdAt`（`runOrderSync`）
 - `.global_refund_sync_time` — 退款事件游标，推进用 `refund.createdAt`（`runRefundSync`）
 - `.global_refund_scan_time` — 候选订单扫描游标，推进用 `order.updatedAt`
+- `.global_exchange_rate_cache` — 汇率缓存（**非游标**），按日期存 `{ "YYYY-MM-DD": rate }` 的 JSON，仅缓存非空汇率。空文件安全（`getExchangeRateMap` 读到空内容返回 `{}`）；单文件挂载要求宿主机文件先存在，`deploy.sh` 会兜底 touch
 
 refund 链路是：外层按 `updated_at:>refund_scan` 查候选订单 → 内层 `buildRefundOrders` 按 `refund.createdAt > refund_sync` 过滤出真正的新退款，每条展开成独立对象推送。两层游标分开推进的目的是：退款事件可能晚于订单创建，用 `updatedAt` 扫描面 + `createdAt` 判重，避免漏退或重推。
 
 **类型的三档差异**，改 `configValidator.js` / `buildOrders.js` 时要守住：
 - 常规类型（drapery 等）：有固定 collection id + suffix，`buildThirdOrders` 按 collection id 匹配生成三级单号
-- `secondary_order`：没有 collection id / suffix，按订单聚合出二级结构，构造时需查 USD→RMB 汇率（`src/exchangeRate.js`，内网接口 `http://192.168.1.252:5000`），并且折扣后总价要先扣 GiftCard 抵扣金额
+- `secondary_order`：没有 collection id / suffix，按订单聚合出二级结构，构造时需查 USD→RMB 汇率（走 `resolveUsdToRmbRate`，`src/exchangeRate.js`，内网接口 `http://192.168.1.252:5000`，请求 5s 超时）：按日期缓存到 `.global_exchange_rate_cache`，当天命中缓存不重复请求；取不到（null/超时）则按天回退最多 5 天取最近一次成功汇率，最坏为 null。`usdToRmbRate` 仅作展示字段、不参与金额计算。折扣后总价要先扣 GiftCard 抵扣金额
 - `others`：fallback 桶，把不落入 `OTHERS_FALLBACK_BASE_COLLECTION_IDS` 的 lineItem 归到这里；没有 collection id
 - `refund`：没有 collection id / suffix，按 refund 事件展开而非按订单展开
 
