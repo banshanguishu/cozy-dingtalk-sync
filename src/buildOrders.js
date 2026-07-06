@@ -142,7 +142,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       holdbackStyle: customAttributes["Holdback Style"] || "/",
       mountingType: customAttributes["Mounting Type"] || "/",
       rings: customAttributes["Rings"] || "/",
-      bendPositions: customAttributes["Bend Position(s)"] || "/",
+      bendPositions: customAttributes["Corner Angle"] || customAttributes["Corner Style"] || customAttributes["Bend Position(s)"] || "/",
       panelConfiguration: customAttributes["Panel Configuration"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
@@ -243,7 +243,7 @@ const buildThirdOrders = (orders, type) => {
           quantity: node.quantity || 0, // 商品数量
           createdAt: DateHandler(o.createdAt), // 订单创建时间
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
-          note: o.note || "/",
+          note: (type === "others" && customAttributes["Notes"]) || o.note || "/", // others 优先取行级 Notes，为空回退订单级 note
           customerName: customerName, // 客户名称
           email: o.email || "/", // 客户邮箱
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
