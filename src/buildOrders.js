@@ -164,6 +164,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     };
   } else if (type === "roller_blind" || type === "other_shade") {
     return {
+      productName: node.title || node.product?.title || "/",
       color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordedOptions: customAttributes["Corded Options"] || "/",

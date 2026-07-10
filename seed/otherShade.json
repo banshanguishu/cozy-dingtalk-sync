@@ -10,6 +10,7 @@
   "customerName": "string",
   "email": "string",
   "quantity": "number",
+  "productName": "string",
   "color": "string",
   "liftType": "string",
   "cordedOptions": "string",
