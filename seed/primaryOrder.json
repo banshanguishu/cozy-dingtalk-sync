@@ -3,5 +3,6 @@
     "productType": "string[]",
     "email": "string",
     "orderTotalPrice": "number",
-    "source": "string"
+    "source": "string",
+    "westCoastTime": "string"
 }

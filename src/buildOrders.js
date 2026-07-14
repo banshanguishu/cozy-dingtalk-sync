@@ -497,6 +497,7 @@ const buildPrimaryOrders = (orders, type = "primary_order") => {
         email: o?.email || "/",
         orderTotalPrice: roundTo2(safeOrderTotalPrice - giftCardDeductionAmount),
         source: targetTypeSource,
+        westCoastTime: formatWestCoastDate(o.createdAt) || "/", // 美西日期 YYYY-MM-DD，与历史回填口径一致
       });
     }
 

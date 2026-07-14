@@ -3,7 +3,6 @@ require("dotenv").config();
 
 const { buildPrimaryOrders } = require("../src/buildOrders");
 const { appendToLog } = require("../src/fileManager");
-const { formatWestCoastDate } = require("../src/utils");
 
 const {
   SHOPIFY_STORE_URL,
@@ -43,7 +42,6 @@ const CONFIG = {
   endCreatedAt: "", // 可留空，留空则默认取脚本运行时刻（上界 <=）
   dingtalkWebhookUrl: DINGTALK_WEBHOOK_URL_PRIMARYORDER_HISTORY, // 新多维表 webhook（.env）
   dingtalkSourceKeyword: DINGTALK_PRIMARYORDER_HISTORY_KEYWORD, // 新表同步关键字（.env）
-  westCoastTimeField: "westCoastTime", // 输出字段名，需与钉钉新表列映射对齐
 };
 
 const RANGE_QUERY = `
@@ -358,7 +356,7 @@ async function main() {
     );
   }
 
-  // 逐单构造：复用线上 buildPrimaryOrders 保证口径一致，再挂上美西日期
+  // 逐单构造：复用线上 buildPrimaryOrders（已含 westCoastTime 美西日期），仅把 source 覆盖为 history 表关键字
   const builtOrders = [];
   for (const o of activeOrders) {
     const [item] = buildPrimaryOrders([o], "primary_order");
@@ -366,7 +364,6 @@ async function main() {
     builtOrders.push({
       ...item,
       source: CONFIG.dingtalkSourceKeyword,
-      [CONFIG.westCoastTimeField]: formatWestCoastDate(o.createdAt) || "/",
     });
   }
 
