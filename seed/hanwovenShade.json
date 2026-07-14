@@ -22,6 +22,7 @@
     "edgeBinding": "string",
     "remoteControl": "string",
     "hub": "string",
+    "installMethod": "string",
     "roomDescription": "string",
     "source": "string"
 }

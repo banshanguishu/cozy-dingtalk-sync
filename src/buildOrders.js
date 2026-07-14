@@ -160,6 +160,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       edgeBinding: customAttributes["Edge Binding"] || "/",
       remoteControl: customAttributes["Remote Control"] || "/",
       hub: customAttributes["Select Connect"] || "/",
+      installMethod: customAttributes["Installation Method"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   } else if (type === "roller_blind" || type === "other_shade") {
