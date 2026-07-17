@@ -54,6 +54,9 @@ const getOrderNumber = (name = "") => {
   return name.startsWith("#") ? name.slice(1) : name;
 };
 
+/* 客户邮箱统一转小写；无邮箱回退 "/" */
+const normalizeEmail = (email) => (email ? String(email).toLowerCase() : "/");
+
 /* 从 lineItem 的 discountAllocations 提取折扣码/标题；保留原始顺序、不去重，由调用方决定如何聚合 */
 const extractLineItemDiscountCodes = (node) => {
   if (!node?.discountAllocations || node.discountAllocations.length === 0) return [];
@@ -247,7 +250,7 @@ const buildThirdOrders = (orders, type) => {
           updatedAt: DateHandler(o.updatedAt), // 订单更新时间
           note: (type === "others" && customAttributes["Notes"]) || o.note || "/", // others 优先取行级 Notes，为空回退订单级 note
           customerName: customerName, // 客户名称
-          email: o.email || "/", // 客户邮箱
+          email: normalizeEmail(o.email), // 客户邮箱（统一小写）
           source: targetTypeSource, // 重要：这是同步数据到钉钉多维表必需的关键字
         };
         const thirdOrderField = buildThirdItem(type, customAttributes, node);
@@ -335,7 +338,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         usdToRmbRate, // 当前同步轮次汇率
         customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
         phone: o?.shippingAddress?.phone || "/", // 客户电话
-        email: o?.email || "/", // 客户邮箱
+        email: normalizeEmail(o?.email), // 客户邮箱（统一小写）
         address1: o?.shippingAddress?.address1 || "/", // 详细地址
         zip: o?.shippingAddress?.zip || "/", // 邮编
         city: o?.shippingAddress?.city || "/", // 城市
@@ -495,7 +498,7 @@ const buildPrimaryOrders = (orders, type = "primary_order") => {
       result.push({
         name: getOrderNumber(o.name),
         productType: Array.from(productTypeSet),
-        email: o?.email || "/",
+        email: normalizeEmail(o?.email),
         orderTotalPrice: roundTo2(safeOrderTotalPrice - giftCardDeductionAmount),
         source: targetTypeSource,
         westCoastTime: formatWestCoastDate(o.createdAt) || "/", // 美西日期 YYYY-MM-DD，与历史回填口径一致
