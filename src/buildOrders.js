@@ -125,7 +125,7 @@ const buildThirdItem = (type, customAttributes, node) => {
           }
           return customAttributes[type];
         }
-        if (node.variant.selectedOptions.length > 0) {
+        if (node.variant?.selectedOptions?.length > 0) {
           const t = node.variant.selectedOptions.find((item) => item.name === type);
           if (t) return t.value;
         }
