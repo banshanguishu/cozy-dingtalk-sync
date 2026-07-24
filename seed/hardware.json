@@ -19,6 +19,7 @@
   "size": "string",
   "runnerType": "string",
   "powerType": "string",
+  "controlMethod": "string",
   "holdbackStyle": "string",
   "mountingType": "string",
   "rings": "string",

@@ -15,6 +15,7 @@
     "color": "string",
     "width": "number",
     "length": "number",
+    "yardSize": "string",
     "header": "string",
     "liner": "string",
     "ringColor": "string",

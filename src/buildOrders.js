@@ -84,9 +84,10 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
       discountCode,
-      color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
+      color: customAttributes["Color"] || customAttributes["Color & Code"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
+      yardSize: customAttributes["Size (inch)"] || customAttributes["Style"] || "/",
       // header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
       header: customAttributes["Header Type"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
       liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
@@ -115,7 +116,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
     };
   } else if (type === "hardware") {
-    const getColorOrLenthSku = (type) => {
+    const getShopifyOwnVariant = (type) => {
       // Shopify 字段可能带前后空格，统一对字符串返回值 trim；数值（calculateDimension 结果）保持原样
       const raw = (() => {
         if (customAttributes[type]) {
@@ -135,13 +136,14 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       productName: node.title || node.product?.title || "/",
       discountCode,
-      colorSku: getColorOrLenthSku("Color"),
-      sizeSku: getColorOrLenthSku("Length (inch)"),
-      capStyle: getColorOrLenthSku("Cap Style"),
+      colorSku: getShopifyOwnVariant("Color"),
+      sizeSku: getShopifyOwnVariant("Length (inch)"),
+      capStyle: getShopifyOwnVariant("Cap Style"),
       bracketStyle: customAttributes["Bracket Style"] || "/",
       size: customAttributes["Size"] || "/",
       runnerType: customAttributes["Runner Type"] || "/",
-      powerType: customAttributes["Power Type"] || "/",
+      powerType: customAttributes["Power Type"] || getShopifyOwnVariant("Power Type") || "/",
+      controlMethod: customAttributes["Control Method"] || getShopifyOwnVariant("Control Method") || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",
       mountingType: customAttributes["Mounting Type"] || "/",
       rings: customAttributes["Rings"] || "/",
