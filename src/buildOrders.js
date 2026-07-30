@@ -86,7 +86,11 @@ const buildThirdItem = (type, customAttributes, node) => {
       discountCode,
       color: customAttributes["Color"] || customAttributes["Color & Code"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
-      length: calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"]),
+      // 两个基础值至少一个有值时按原逻辑求和；都为空时回退取 Length (inch)
+      length:
+        customAttributes["Single Panel Order Length (inch)"] || customAttributes["Length Fraction (optional)"]
+          ? calculateDimension(customAttributes["Single Panel Order Length (inch)"], customAttributes["Length Fraction (optional)"])
+          : calculateDimension(customAttributes["Length (inch)"]),
       yardSize: customAttributes["Size (inch)"] || customAttributes["Style"] || "/",
       // header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
       header: customAttributes["Header Type"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
