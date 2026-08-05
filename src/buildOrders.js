@@ -100,6 +100,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       memoryShape: customAttributes["Memory Shape"] || "Unknown",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
       trimColor: customAttributes["Trim Color"] || "/",
+      orderNotes: customAttributes["Order Notes"] || "/",
     };
   } else if (type === "roman_shade") {
     return {

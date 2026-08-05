@@ -7,8 +7,6 @@
     "createdAt": "string",
     "updatedAt": "string",
     "note": "string",
-    "customerName": "string",
-    "email": "string",
     "quantity": "number",
     "collection": "string",
     "discountCode": "string",
@@ -23,5 +21,6 @@
     "memoryShape": "string",
     "roomDescription": "string",
     "trimColor": "string",
+    "orderNotes": "string",
     "source": "string"
 }
