@@ -26,5 +26,8 @@
   "bendPositions": "string",
   "panelConfiguration": "string",
   "roomDescription": "string",
+  "wallX": "string",
+  "wallY": "string",
+  "wallZ": "string",
   "source": "string"
 }

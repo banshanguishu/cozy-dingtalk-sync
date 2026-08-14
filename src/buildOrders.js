@@ -155,6 +155,9 @@ const buildThirdItem = (type, customAttributes, node) => {
       bendPositions: customAttributes["Corner Angle"] || customAttributes["Corner Style"] || customAttributes["Bend Position(s)"] || "/",
       panelConfiguration: customAttributes["Panel Configuration"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
+      wallX: customAttributes["Wall Width - X (inch)"] || "/",
+      wallY: customAttributes["Wall Width - Y (inch)"] || "/",
+      wallZ: customAttributes["Wall Width - Z (inch)"] || "/",
     };
   } else if (type === "hanwoven_shade") {
     return {
