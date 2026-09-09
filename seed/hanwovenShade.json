@@ -24,5 +24,6 @@
     "hub": "string",
     "installMethod": "string",
     "roomDescription": "string",
+    "foldStyle": "string",
     "source": "string"
 }

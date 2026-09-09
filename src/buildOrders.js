@@ -9,6 +9,10 @@ const PSEUDO_LINE_ITEM_TITLES = new Set(["Tip"]);
 const isPseudoLineItem = (node) => !node?.product && PSEUDO_LINE_ITEM_TITLES.has(node?.title);
 // buildSecondOrders 中用于隔离 Tip 等伪商品的分组键，避免和 getProductCollectionId 返回的 "other" 撞车
 const SECOND_TIP_GROUP_KEY = "pseudo_tip";
+// 强制归入 others 桶的 lineItem title 白名单：商品虽挂在基础类型合集下（如 Special Requests 挂在 Free Swatches 合集），
+// 但业务上需要进 others 三级表。仅影响 buildThirdOrders 的 others 分支，二级/一级订单构造不受影响
+const FORCE_OTHERS_LINE_ITEM_TITLES = new Set(["Special Requests"]);
+const isForceOthersLineItem = (node) => FORCE_OTHERS_LINE_ITEM_TITLES.has((node?.title || "").trim());
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -175,6 +179,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       installMethod: customAttributes["Installation Method"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
+      foldStyle: customAttributes["Fold Style"] || "/",
     };
   } else if (type === "roller_blind" || type === "other_shade") {
     return {
@@ -231,7 +236,8 @@ const buildThirdOrders = (orders, type) => {
         const isTargetTypeProduct =
           type === "others"
             ? !isPseudoExcludedItem &&
-              !collectionIds.some((id) => OTHERS_FALLBACK_BASE_COLLECTION_IDS.some((baseId) => id.endsWith(baseId)))
+              (isForceOthersLineItem(node) ||
+                !collectionIds.some((id) => OTHERS_FALLBACK_BASE_COLLECTION_IDS.some((baseId) => id.endsWith(baseId))))
             : collectionIds.some((id) => id.endsWith(targetTypeId));
         if (!isTargetTypeProduct) continue;
 
