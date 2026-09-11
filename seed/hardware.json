@@ -29,5 +29,7 @@
   "wallX": "string",
   "wallY": "string",
   "wallZ": "string",
+  "motorSide": "string",
+  "remoteControl": "string",
   "source": "string"
 }

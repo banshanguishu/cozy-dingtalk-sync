@@ -162,6 +162,8 @@ const buildThirdItem = (type, customAttributes, node) => {
       wallX: customAttributes["Wall Width - X (inch)"] || "/",
       wallY: customAttributes["Wall Width - Y (inch)"] || "/",
       wallZ: customAttributes["Wall Width - Z (inch)"] || "/",
+      motorSide: customAttributes["Motor Side"] || "/",
+      remoteControl: customAttributes["Remote Control"] || "/",
     };
   } else if (type === "hanwoven_shade") {
     return {
