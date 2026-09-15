@@ -13,6 +13,11 @@ const SECOND_TIP_GROUP_KEY = "pseudo_tip";
 // 但业务上需要进 others 三级表。仅影响 buildThirdOrders 的 others 分支，二级/一级订单构造不受影响
 const FORCE_OTHERS_LINE_ITEM_TITLES = new Set(["Special Requests"]);
 const isForceOthersLineItem = (node) => FORCE_OTHERS_LINE_ITEM_TITLES.has((node?.title || "").trim());
+// Ripple Fold Header 合集 ID：drapery 商品命中该合集时 header 固定取 "Ripple Fold"，否则再走 customAttributes 取值顺序兜底
+const RIPPLE_FOLD_HEADER_COLLECTION_ID = "505647137086";
+const RIPPLE_FOLD_HEADER_VALUE = "Ripple Fold";
+const isRippleFoldHeaderProduct = (node) =>
+  (node?.product?.collections?.edges || []).some((coll) => (coll?.node?.id || "").endsWith(RIPPLE_FOLD_HEADER_COLLECTION_ID));
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -97,7 +102,9 @@ const buildThirdItem = (type, customAttributes, node) => {
           : calculateDimension(customAttributes["Length (inch)"]),
       yardSize: customAttributes["Size (inch)"] || customAttributes["Style"] || "/",
       // header: customAttributes["Pleat Position"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
-      header: customAttributes["Header Type"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
+      header: isRippleFoldHeaderProduct(node)
+        ? RIPPLE_FOLD_HEADER_VALUE
+        : customAttributes["Header Type"] || customAttributes["Header Style (Hooks included)"] || customAttributes["Header Style"] || "/",
       liner: customAttributes["Lining"] || customAttributes["Liner Blackout Level"] || "Unlined",
       ringColor: customAttributes["Rings"] || customAttributes["Grommet Color"] || "NA",
       tieBack: customAttributes["Tieback"] || "/",
