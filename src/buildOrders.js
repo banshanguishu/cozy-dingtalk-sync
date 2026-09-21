@@ -1,5 +1,5 @@
 ﻿const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP, COLLECTION_TYPE_IDS, COLLECTION_ID_MAP_CONFIG, FREE_SWATCHES_COLLECTION_ID } = require("./mapping/collectionMap");
-const { formatWestCoastDate } = require("./utils");
+const { formatWestCoastDate, formatBeijingDate } = require("./utils");
 const OTHERS_FALLBACK_BASE_TYPES = ["drapery", "roman_shade", "hardware", "hanwoven_shade", "roller_blind", "other_shade", "free_swatches"];
 const OTHERS_FALLBACK_BASE_COLLECTION_IDS = OTHERS_FALLBACK_BASE_TYPES.map((type) => COLLECTION_MAP[type]?.id).filter(Boolean);
 // 伪商品 lineItem title 白名单：lineItem 的 product 为 null（Shopify 后台没有对应商品，
@@ -360,6 +360,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
       const commonField = {
         parentName, // 一级单号
         createAt: formatWestCoastDate(o.createdAt) || "/", // 订单创建时间（美西时间）
+        createAtBeijing: formatBeijingDate(o.createdAt) || "/", // 订单创建时间（北京时间）
         usdToRmbRate, // 当前同步轮次汇率
         customerName: o?.shippingAddress?.name || o?.customer?.displayName || "/", // 客户姓名
         phone: o?.shippingAddress?.phone || "/", // 客户电话
