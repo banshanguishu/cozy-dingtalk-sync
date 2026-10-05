@@ -52,7 +52,7 @@ refund 链路是：外层按 `updated_at:>refund_scan` 查候选订单 → 内�
 
 **类型的三档差异**，改 `configValidator.js` / `buildOrders.js` 时要守住：
 - 常规类型（drapery 等）：有固定 collection id + suffix，`buildThirdOrders` 按 collection id 匹配生成三级单号
-- `secondary_order`：没有 collection id / suffix，按订单聚合出二级结构，构造时需查 USD→RMB 汇率（走 `resolveUsdToRmbRate`，`src/exchangeRate.js`，内网接口 `http://192.168.1.252:5000`，请求 5s 超时）：按日期缓存到 `.global_exchange_rate_cache`，当天命中缓存不重复请求；取不到（null/超时）则按天回退最多 5 天取最近一次成功汇率，最坏为 null。`usdToRmbRate` 仅作展示字段、不参与金额计算。折扣后总价 = 各类别实际折后价（原价 − Shopify 分到 lineItem 的全部折扣）+ 按折后价占比分摊的差额（GiftCard 抵扣等）；运费挂样品类别，无样品类别时按折后价占比分摊；合计等于"订单总价 − GiftCard"（与一级订单 `orderTotalPrice` 一致）
+- `secondary_order`：没有 collection id / suffix，按订单聚合出二级结构，构造时需查 USD→RMB 汇率（走 `resolveUsdToRmbRate`，`src/exchangeRate.js`，内网接口 `http://192.168.1.252:5000`，请求 5s 超时）：按日期缓存到 `.global_exchange_rate_cache`，当天命中缓存不重复请求；取不到（null/超时）则按天回退最多 5 天取最近一次成功汇率，最坏为 null。`usdToRmbRate` 仅作展示字段、不参与金额计算。折扣后总价 = 各类别实际折后价（原价 − Shopify 分到 lineItem 的全部折扣）+ 按折后价占比分摊的差额（GiftCard 抵扣等）；运费挂样品类别，无样品类别时按折后价占比分摊；合计等于"订单总价 − GiftCard"（与一级订单 `orderTotalPrice` 一致）。`discountAmount` 为本类别 lineItem 分到的全部折扣之和（不含 GiftCard、运费折扣），三级订单不带该字段
 - `others`：fallback 桶，把不落入 `OTHERS_FALLBACK_BASE_COLLECTION_IDS` 的 lineItem 归到这里；没有 collection id
 - `refund`：没有 collection id / suffix，按 refund 事件展开而非按订单展开
 

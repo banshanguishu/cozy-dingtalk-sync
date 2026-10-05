@@ -123,12 +123,10 @@ const buildThirdItem = (type, customAttributes, node) => {
   if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) return null;
   const itemDiscountCodes = extractLineItemDiscountCodes(node);
   const discountCode = itemDiscountCodes.length > 0 ? [...new Set(itemDiscountCodes)].join(";") : "/";
-  const discountAmount = getLineItemDiscountAmount(node);
   if (type === "drapery") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
       discountCode,
-      discountAmount,
       color: customAttributes["Color"] || customAttributes["Color & Code"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
       // 两个基础值至少一个有值时按原逻辑求和；都为空时回退取 Length (inch)
@@ -153,7 +151,6 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
-      discountAmount,
       color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Shade Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Shade Length (inch)"], customAttributes["Length Fraction (optional)"]),
@@ -189,7 +186,6 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       productName: node.title || node.product?.title || "/",
       discountCode,
-      discountAmount,
       colorSku: getShopifyOwnVariant("Color"),
       sizeSku: getShopifyOwnVariant("Length (inch)"),
       capStyle: getShopifyOwnVariant("Cap Style"),
@@ -215,7 +211,6 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
-      discountAmount,
       color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordColor: customAttributes["Cord Color"] || "/",
@@ -244,13 +239,11 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
       discountCode,
-      discountAmount,
     };
   } else if (type === "others") {
     return {
       productName: node.title || node.product?.title || "/",
       discountCode,
-      discountAmount,
     };
   }
 };
@@ -427,6 +420,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           groupedByCollection[groupKey] = {
             originalTotalPrice: 0,
             discountedTotalPrice: 0,
+            discountAmount: 0,
             totalPrice: 0,
             productNames: [],
             discountCodes: new Set(),
@@ -434,10 +428,13 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
+        const lineDiscountAmount = getLineItemDiscountAmount(node);
+        // 本组优惠金额：组内 lineItem 实际分到的全部折扣之和，不含礼品卡、运费折扣
+        groupedByCollection[groupKey].discountAmount += lineDiscountAmount;
         if (!Number.isNaN(originAmount)) {
           groupedByCollection[groupKey].originalTotalPrice += originAmount;
           // 实际折后价：原价 - Shopify 分到该 lineItem 的全部折扣（专属折扣 + 整单折扣）
-          groupedByCollection[groupKey].discountedTotalPrice += originAmount - getLineItemDiscountAmount(node);
+          groupedByCollection[groupKey].discountedTotalPrice += originAmount - lineDiscountAmount;
         }
         if (node?.title) groupedByCollection[groupKey].productNames.push(node.title);
         // 折扣码按 lineItem 收集到本组 Set，输出时去重 join——每组一条记录、每组独立的折扣码集合
@@ -526,6 +523,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
           productType,
           productNames: item.productNames?.length ? item.productNames.join("；") : "/",
           discountCode: item.discountCodes?.size > 0 ? [...item.discountCodes].join(";") : "/",
+          discountAmount: roundTo2(item.discountAmount),
         });
       }
     }

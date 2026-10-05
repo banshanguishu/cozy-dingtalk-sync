@@ -12,6 +12,5 @@
   "quantity": "number",
   "productName": "string",
   "discountCode": "string",
-  "discountAmount": "number",
   "source": "string"
 }
