@@ -18,6 +18,23 @@ const RIPPLE_FOLD_HEADER_COLLECTION_ID = "505647137086";
 const RIPPLE_FOLD_HEADER_VALUE = "Ripple Fold";
 const isRippleFoldHeaderProduct = (node) =>
   (node?.product?.collections?.edges || []).some((coll) => (coll?.node?.id || "").endsWith(RIPPLE_FOLD_HEADER_COLLECTION_ID));
+// 转角窗帘杆商品 ID 白名单：按商品 ID 锁定（不受改名/改 SKU 影响），商品重建/复制出新商品时在此补 ID（行尾注明商品名）。
+// 命中时 hardware 额外同步 A1/A2 转角角度，其余 hardware 商品两者固定为 "/"
+const ANGLE_TRAVERSE_ROD_PRODUCT_IDS = new Set([
+  "12036139090238", // Ronan | Custom Size | Angle Traverse | Curtain Rod
+]);
+const isAngleTraverseRodProduct = (node) => ANGLE_TRAVERSE_ROD_PRODUCT_IDS.has((node?.product?.id || "").split("/").pop());
+// Corner Style 为 "> 90° Corner" 时 A1/A2 按客户填写值同步；否则（"= 90° Corner"）无 A1/A2 选项，A1 固定 "90"、A2 为 "/"
+const getAngleTraverseCornerAngles = (customAttributes, node) => {
+  if (!isAngleTraverseRodProduct(node)) return { cornerAngleA1: "/", cornerAngleA2: "/" };
+  if ((customAttributes["Corner Style"] || "").trim() === "> 90° Corner") {
+    return {
+      cornerAngleA1: (customAttributes["Corner Angle (A1)"] || "").trim() || "/",
+      cornerAngleA2: (customAttributes["Corner Angle (A2)"] || "").trim() || "/",
+    };
+  }
+  return { cornerAngleA1: "90", cornerAngleA2: "/" };
+};
 
 /* 名称处理 */
 const getSplitNameFirst = (name = "") => {
@@ -192,6 +209,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       wallZ: customAttributes["Wall Width - Z (inch)"] || "/",
       motorSide: customAttributes["Motor Side"] || "/",
       remoteControl: customAttributes["Remote Control"] || "/",
+      ...getAngleTraverseCornerAngles(customAttributes, node),
     };
   } else if (type === "hanwoven_shade") {
     return {

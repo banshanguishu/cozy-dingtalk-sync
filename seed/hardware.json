@@ -32,5 +32,7 @@
   "wallZ": "string",
   "motorSide": "string",
   "remoteControl": "string",
+  "cornerAngleA1": "string",
+  "cornerAngleA2": "string",
   "source": "string"
 }

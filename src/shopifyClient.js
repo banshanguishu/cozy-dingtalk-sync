@@ -157,6 +157,7 @@ function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
                     }
                   }
                   product {
+                    id
                     title
                     collections(first: 50) {
                       edges {

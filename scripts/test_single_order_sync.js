@@ -96,6 +96,7 @@ query($id: ID!) {
             }
           }
           product {
+            id
             title
             collections(first: 50) {
               edges {

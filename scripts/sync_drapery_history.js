@@ -100,6 +100,7 @@ query($query: String!, $after: String) {
                 }
               }
               product {
+                id
                 title
                 collections(first: 50) {
                   edges {
