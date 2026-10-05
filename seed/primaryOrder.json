@@ -1,0 +1,8 @@
+{
+    "name": "string",
+    "productType": "string[]",
+    "email": "string",
+    "orderTotalPrice": "number",
+    "source": "string",
+    "westCoastTime": "string"
+}

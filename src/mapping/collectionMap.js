@@ -1,6 +1,29 @@
 require("dotenv").config();
 
-const { DINGTALK_WEBHOOK_URL_DRAPERY, DINGTALK_WEBHOOK_URL_ROMANSHADE, DINGTALK_DRAPERY_KEYWORD, DINGTALK_ROMANSHADE_KEYWORD } = process.env;
+const {
+  DINGTALK_WEBHOOK_URL_DRAPERY,
+  DINGTALK_WEBHOOK_URL_ROMANSHADE,
+  DINGTALK_DRAPERY_KEYWORD,
+  DINGTALK_ROMANSHADE_KEYWORD,
+  DINGTALK_HARDWARE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_HARDWARE,
+  DINGTALK_HANWOVENSHADE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
+  DINGTALK_SECONDARYORDER_KEYWORD,
+  DINGTALK_WEBHOOK_URL_SECONDARYORDER,
+  DINGTALK_ROLLERBLIND_KEYWORD,
+  DINGTALK_OTHERSHADE_KEYWORD,
+  DINGTALK_WEBHOOK_URL_ROLLERBLIND,
+  DINGTALK_WEBHOOK_URL_OTHERSHADE,
+  DINGTALK_OTHERS_KEYWORD,
+  DINGTALK_WEBHOOK_URL_OTHERS,
+  DINGTALK_REFUND_KEYWORD,
+  DINGTALK_WEBHOOK_URL_REFUND,
+  DINGTALK_PRIMARYORDER_KEYWORD,
+  DINGTALK_WEBHOOK_URL_PRIMARYORDER,
+} = process.env;
+
+const FREE_SWATCHES_COLLECTION_ID = "499489243454";
 
 const COLLECTION_MAP = {
   drapery: {
@@ -23,33 +46,85 @@ const COLLECTION_MAP = {
     id: "474667417918",
     name: "Hardware",
     suffix: "-H",
+    cnName: "配件",
+    sourceKeyWord: DINGTALK_HARDWARE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_HARDWARE,
   },
   free_swatches: {
-    id: "481652998462",
+    id: FREE_SWATCHES_COLLECTION_ID,
     name: "Free Swatches",
+    cnName: "样品",
     suffix: "-X",
   },
   hanwoven_shade: {
     id: "492918997310",
     name: "Hanwoven Shade",
     suffix: "-W",
+    cnName: "麻草帘",
+    sourceKeyWord: DINGTALK_HANWOVENSHADE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_HANWOVENSHADE,
   },
-  accessories: {
-    id: "495589982526",
-    name: "Accessories",
+  other_shade: {
+    id: "499488358718",
+    name: "Other Shade",
+    cnName: "其他帘子",
+    suffix: "-Q",
+    sourceKeyWord: DINGTALK_OTHERSHADE_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_OTHERSHADE,
+  },
+  roller_blind: {
+    id: "497516085566",
+    name: "Roller Blind",
+    cnName: "卷帘",
+    suffix: "-S",
+    sourceKeyWord: DINGTALK_ROLLERBLIND_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_ROLLERBLIND,
+  },
+  others: {
+    name: "Others",
+    cnName: "其他",
     suffix: "-O",
+    sourceKeyWord: DINGTALK_OTHERS_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_OTHERS,
+  },
+  refund: {
+    name: "Refund",
+    cnName: "退款",
+    sourceKeyWord: DINGTALK_REFUND_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_REFUND,
+  },
+  secondary_order: {
+    name: "Secondary Order",
+    cnName: "二级订单",
+    sourceKeyWord: DINGTALK_SECONDARYORDER_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_SECONDARYORDER,
+  },
+  primary_order: {
+    name: "Primary Order",
+    cnName: "一级订单",
+    sourceKeyWord: DINGTALK_PRIMARYORDER_KEYWORD,
+    dingtalk_webhook: DINGTALK_WEBHOOK_URL_PRIMARYORDER,
   },
 };
 
-const COLLECTION_TYPE_IDS = Object.values(COLLECTION_MAP).map((colle) => colle.id);
+const COLLECTION_TYPE_IDS = Object.values(COLLECTION_MAP).map((colle) => colle.id).filter(Boolean);
 
 const COLLECTION_TYPE_NAMES = Object.values(COLLECTION_MAP).map((colle) => colle.name);
 
 const COLLECTION_TYPE_NAMES_DEV = Object.keys(COLLECTION_MAP);
+
+const COLLECTION_ID_MAP_CONFIG = Object.values(COLLECTION_MAP).reduce((prev, cur) => {
+  if (!cur.id) return prev;
+  const { id, ...rest } = cur;
+  prev[id] = rest;
+  return prev;
+}, {});
 
 module.exports = {
   COLLECTION_MAP,
   COLLECTION_TYPE_IDS,
   COLLECTION_TYPE_NAMES,
   COLLECTION_TYPE_NAMES_DEV,
+  COLLECTION_ID_MAP_CONFIG,
+  FREE_SWATCHES_COLLECTION_ID,
 };

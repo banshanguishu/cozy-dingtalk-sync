@@ -1,121 +1,210 @@
-require("dotenv").config();
-const { fetchOrdersPage } = require("./src/shopifyClient");
+﻿require("dotenv").config();
+const { fetchOrdersPage, fetchRefundOrdersPage } = require("./src/shopifyClient");
 const { appendToLog } = require("./src/fileManager");
 const { syncOrdersToDingTalk } = require("./src/dingtalkClient");
 const { getLastSyncTime, updateLastSyncTime } = require("./src/stateManager");
-const { buildThirdOrders } = require("./src/buildThirdOrders");
-const { COLLECTION_TYPE_NAMES_DEV, COLLECTION_MAP } = require("./src/mapping/collectionMap");
-const { highlightTerminalContent } = require("./src/utlis");
+const { buildThirdOrders, buildSecondOrders, buildRefundOrders, buildPrimaryOrders } = require("./src/buildOrders");
+const { COLLECTION_MAP } = require("./src/mapping/collectionMap");
+const { validateRuntimeConfig } = require("./src/configValidator");
+const { resolveUsdToRmbRate } = require("./src/exchangeRate");
+
+// 默认同步类型（由 run 内部统一驱动）
+// 从映射中自动收集已完成同步配置的 type，避免新增类型时遗漏
+const TYPES_TO_SYNC = Object.entries(COLLECTION_MAP)
+  .filter(([type, config]) => type !== "refund" && config && config.sourceKeyWord && config.dingtalk_webhook)
+  .map(([type]) => type);
+const GLOBAL_CURSOR_KEY = "global";
+const REFUND_CURSOR_KEY = "refund";
+const REFUND_SCAN_CURSOR_KEY = "refund_scan";
 
 // 简单的延时函数，防止 API 速率限制
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * 从订单列表中找出最大的 createdAt
- * @param {Array} orders
- */
-function getMaxCreatedAt(orders) {
+function getMaxFieldTime(orders, fieldName) {
   if (!orders || orders.length === 0) return null;
   return orders.reduce((max, order) => {
-    return !max || order.createdAt > max ? order.createdAt : max;
+    const current = order?.[fieldName];
+    return !current || (max && current <= max) ? max : current;
   }, null);
 }
 
-/**
- * 同步数据
- * @param {*} type
- * type.drapery
- * type.roman_shade
- */
-async function run(type) {
-  if (!type || !COLLECTION_TYPE_NAMES_DEV.includes(type)) {
-    console.log("\n❌ 缺少collection type字段或者字段值不正确，程序终止！\n");
-    return;
-  }
-  const typeName = highlightTerminalContent(COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name);
+function normalizeTypes(types) {
+  if (!types) return TYPES_TO_SYNC;
+  if (Array.isArray(types)) return types;
+  return [types];
+}
 
-  console.log(`\n🚀 开始增量查询${typeName}同步任务...\n`);
-
-  // 1. 获取一次 当前type类型 同步的时间点，并锁定作为本次运行的查询基准
-  let lastSyncTime = getLastSyncTime(type);
-  const queryTime = lastSyncTime;
-
-  console.log(`📅 上次${typeName}同步时间点: ${highlightTerminalContent(queryTime)} (本次查询基准，每页查询50条)\n`);
+async function runRefundSync() {
+  const refundEventTime = getLastSyncTime(REFUND_CURSOR_KEY);
+  const refundScanTime = getLastSyncTime(REFUND_SCAN_CURSOR_KEY, refundEventTime);
+  console.log(`🚀 开始退款增量查询，上次退款同步时间点: 【${refundEventTime}】`);
+  console.log(`🔎 当前退款候选订单扫描游标: 【${refundScanTime}】`);
 
   let hasNext = true;
   let cursor = null;
-  let totalProcessed = 0;
-  let pageCount = 0;
+  const refundOrders = [];
 
   try {
     while (hasNext) {
-      pageCount++;
-      // console.log(`📄 正在处理 ${type} 第 ${pageCount} 页 (Cursor: ${cursor ? "..." + cursor.slice(-10) : "Start"})...`);
+      const { orders, pageInfo } = await fetchRefundOrdersPage(refundScanTime, cursor);
+      refundOrders.push(...orders);
 
-      // 2. 拉取一页数据
-      const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor, type);
-
-      // console.log(`📥 ${type} 第 ${pageCount} 页获取到 ${originOrders.length} 个订单，pageInfo为：${JSON.stringify(pageInfo)}`);
-
-      // 组装数据为对应type多维表所需要格式(细化到三级)
-      const thirdOrders = buildThirdOrders(originOrders, type);
-
-      if (thirdOrders.length === 0) {
-        // ⚠️
-        console.log(`✅ 第 ${pageCount} 页没有更多符合要求的三级订单\n`);
-      } else {
-        // 3. 推送到钉钉
-        await syncOrdersToDingTalk(thirdOrders, type);
-      }
-
-      // 4. 追加日志，原始订单数据和组装后数据 (本地存档)
-      if (originOrders.length > 0) {
-        const originLogFileName = `${new Date().toISOString().split("T")[0]}_sync_log.jsonl`;
-        appendToLog(originLogFileName, originOrders);
-      }
-      if (thirdOrders.length > 0) {
-        const buildlLogFileName = `${new Date().toISOString().split("T")[0]}_${type}_sync_log.jsonl`;
-        appendToLog(buildlLogFileName, thirdOrders);
-      }
-
-      // 5. 更新时间游标 (关键!)
-      // 取本页中最新的时间，立即更新到文件，确保断点续传。（注意：使用的是原始订单数据，而非构造的三级订单）
-      const maxTime = getMaxCreatedAt(originOrders);
-      if (maxTime) {
-        updateLastSyncTime(maxTime, type);
-        lastSyncTime = maxTime; // 更新内存变量
-        console.log(`🔖 ${typeName} 游标已更新至: ${maxTime}\n`);
-      }
-
-      totalProcessed += originOrders.length;
-
-      // 准备下一页
-      hasNext = pageInfo.hasNextPage === true; // 强制转换为布尔值，防止 undefined/"false" 等意外
-
+      hasNext = pageInfo.hasNextPage === true;
       if (hasNext) {
         cursor = pageInfo.endCursor;
-        // 稍微休息一下，避免触发 API 速率限制
         await delay(500);
       } else {
-        console.log("✅ 没有更多新订单需要同步。\n");
-        break; // 显式退出循环，双重保险
+        break;
       }
     }
 
-    // console.log(`\n✅ 同步完成! 共处理 ${totalProcessed} 个订单。`);
+    if (refundOrders.length === 0) {
+      console.log("✅ 本轮没有新增退款订单需要查询。");
+      return;
+    }
+
+    console.log(`✅ Shopify 退款增量订单拉取完成，共【${refundOrders.length}】条候选订单。`);
+
+    const maxRefundScanTime = getMaxFieldTime(refundOrders, "updatedAt");
+    const buildedRefundOrders = buildRefundOrders(refundOrders, refundEventTime, REFUND_CURSOR_KEY);
+    if (!buildedRefundOrders.length) {
+      console.log("✅ 本轮没有新增退款记录需要同步。");
+    } else {
+      const { successCount, failCount } = await syncOrdersToDingTalk(buildedRefundOrders, REFUND_CURSOR_KEY);
+      console.log(`✅ ${successCount}, ❌ ${failCount}`);
+
+      const content = buildedRefundOrders.map((item) => JSON.stringify(item)).join("\n") + "\n";
+      appendToLog("output", REFUND_CURSOR_KEY, content, "jsonl");
+    }
+
+    const maxRefundTime = getMaxFieldTime(buildedRefundOrders, "refundTime");
+    if (maxRefundTime) {
+      updateLastSyncTime(maxRefundTime, REFUND_CURSOR_KEY);
+      const refundLogLine = `【${new Date().toISOString()}】| 🔄 退款同步游标已更新至: ${maxRefundTime}\n`;
+      appendToLog("logs", REFUND_CURSOR_KEY, refundLogLine, "log");
+      console.log(`✅ 退款同步游标更新至【${maxRefundTime}】`);
+    }
+
+    if (maxRefundScanTime) {
+      updateLastSyncTime(maxRefundScanTime, REFUND_SCAN_CURSOR_KEY);
+      const refundScanLogLine = `【${new Date().toISOString()}】| 🔄 退款扫描游标已更新至: ${maxRefundScanTime}\n`;
+      appendToLog("logs", REFUND_CURSOR_KEY, refundScanLogLine, "log");
+      console.log(`✅ 退款扫描游标更新至【${maxRefundScanTime}】`);
+    }
   } catch (error) {
-    console.error("\n❌ 任务异常终止:", error.message);
-    process.exit(1);
+    console.error("❌ 退款查询任务异常终止:", error.message);
+    throw error;
   }
 }
 
-// html调用方式，获取命令行参数，默认为 drapery
+async function runOrderSync(targetTypes) {
+  const queryTime = getLastSyncTime(GLOBAL_CURSOR_KEY);
+  console.log(`🚀 开始增量查询并分流同步，上次全局同步时间点: 【${queryTime}】`);
+
+  let hasNext = true;
+  let cursor = null;
+  const allOriginOrders = [];
+  let usdToRmbRate = null;
+
+  try {
+    while (hasNext) {
+      const { orders: originOrders, pageInfo } = await fetchOrdersPage(queryTime, cursor);
+      allOriginOrders.push(...originOrders);
+
+      hasNext = pageInfo.hasNextPage === true;
+      if (hasNext) {
+        cursor = pageInfo.endCursor;
+        await delay(500);
+      } else {
+        break;
+      }
+    }
+
+    if (allOriginOrders.length === 0) {
+      console.log("✅ 本轮没有新增订单需要同步。");
+      return;
+    }
+
+    console.log(`✅ Shopify 拉取完成，共【${allOriginOrders.length}】条增量订单，开始分流处理。`);
+
+    if (targetTypes.includes("secondary_order")) {
+      try {
+        usdToRmbRate = await resolveUsdToRmbRate();
+        console.log(`💱 本轮 USD->RMB 汇率: ${usdToRmbRate}`);
+      } catch (error) {
+        console.warn(`⚠️ 汇率查询失败，本轮 secondary_order 将使用空汇率: ${error.message}`);
+      }
+    }
+
+    for (const type of targetTypes) {
+      const typeName = COLLECTION_MAP[type].cnName || COLLECTION_MAP[type].name;
+      console.log(`📮开始分流同步【${typeName}】的订单`);
+
+      let buildedOrder;
+      if (type === "secondary_order") {
+        buildedOrder = buildSecondOrders(allOriginOrders, type, usdToRmbRate);
+      } else if (type === "primary_order") {
+        buildedOrder = buildPrimaryOrders(allOriginOrders, type);
+      } else {
+        buildedOrder = buildThirdOrders(allOriginOrders, type);
+      }
+
+      if (!buildedOrder || buildedOrder.length === 0) {
+        console.log(`✅ 没有需要同步的【${typeName}】订单`);
+        continue;
+      }
+
+      const { successCount, failCount } = await syncOrdersToDingTalk(buildedOrder, type);
+      console.log(`✅ ${successCount}, ❌ ${failCount}`);
+
+      const content = buildedOrder.map((item) => JSON.stringify(item)).join("\n") + "\n";
+      appendToLog("output", type, content, "jsonl");
+    }
+
+    const maxTime = getMaxFieldTime(allOriginOrders, "createdAt");
+    if (maxTime) {
+      updateLastSyncTime(maxTime, GLOBAL_CURSOR_KEY);
+      const logLine = `【${new Date().toISOString()}】| 🔄 全局游标已更新至: ${maxTime}\n`;
+      appendToLog("logs", GLOBAL_CURSOR_KEY, logLine, "log");
+      console.log(`✅ 全局游标更新至【${maxTime}】`);
+    }
+  } catch (error) {
+    console.error("❌ 任务异常终止:", error.message);
+    throw error;
+  }
+}
+
+/**
+ * 同步数据（单次拉取 + 分流处理）
+ * @param {string|string[]} [types]
+ */
+async function run(types) {
+  const targetTypes = normalizeTypes(types);
+  const hasExplicitTypes = Boolean(types);
+  const refundOnly = targetTypes.length === 1 && targetTypes[0] === "refund";
+
+  // 显式指定 type 时，才执行严格配置校验
+  if (hasExplicitTypes) {
+    validateRuntimeConfig(targetTypes);
+  }
+
+  if (refundOnly) {
+    return runRefundSync();
+  }
+  return runOrderSync(targetTypes);
+}
+
+// 直接执行脚本时，支持可选 type 参数（兼容本地单类型调试）
 const args = process.argv.slice(2);
-const type = args[0] || "drapery";
+const inputType = args.length > 1 ? args : args[0];
 
-run(type);
+if (require.main === module) {
+  run(inputType).catch((error) => {
+    console.error("\n❌ 启动前配置校验或任务执行失败:", error.message);
+    process.exit(1);
+  });
+}
 
-// 开发调试，命令行方式
-// node index.js roman_shade
-// node index.js drapery
-
+module.exports = {
+  run,
+};

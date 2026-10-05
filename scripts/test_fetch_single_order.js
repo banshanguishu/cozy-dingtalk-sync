@@ -7,7 +7,10 @@ require("dotenv").config();
 // 配置区域
 // ==========================================
 // 在此处替换为您要查询的订单 ID
-const ORDER_ID = "gid://shopify/Order/6696257225022";
+// const ORDER_ID = "gid://shopify/Order/6778719469886"; // 3726
+// const ORDER_ID = "gid://shopify/Order/6792919646526"; // 3851
+// const ORDER_ID = "gid://shopify/Order/6831120023870"; // drapery 4172
+const ORDER_ID = "gid://shopify/Order/7265136673086";
 
 const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION } = process.env;
 
@@ -25,7 +28,7 @@ const { SHOPIFY_STORE_URL, SHOPIFY_ADMIN_API_ACCESS_TOKEN, SHOPIFY_API_VERSION }
 //    - variant.selectedOptions: 变体选项 (也可能包含部分规格信息)
 //    - sku: SKU
 const QUERY = `
-query($id: ID!, $collectionQuery: String) {
+query($id: ID!) {
   order(id: $id) {
     # 订单ID
     id
@@ -35,6 +38,13 @@ query($id: ID!, $collectionQuery: String) {
     createdAt
     # 支付状态 (例如: PAID, PENDING, REFUNDED)
     displayFinancialStatus
+    # 拒付状态相关
+    disputes {
+      id
+      status
+      initiatedAs
+      initiatedAs
+    }
     # 发货状态 (例如: FULFILLED, UNFULFILLED)
     displayFulfillmentStatus
     # 取消时间 (如果不为空，则表示已取消)
@@ -43,12 +53,95 @@ query($id: ID!, $collectionQuery: String) {
     cancelReason
     # 关闭时间 (如果不为空，则表示已归档/关闭)
     closedAt
+    discountCode
+    note
+    email
+    customer {
+      # 客户姓名 (显示名)
+      displayName
+      # 客户 firstName
+      firstName
+      # 客户 lastName
+      lastName
+      # 客户手机号
+      phone
+    }
     # 订单价格
     totalPriceSet {
       shopMoney {
         amount
         currencyCode
       }
+    }
+    # 总运费价格（原始）
+    totalShippingPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
+    }
+    # 总运费价格（参与过运费折扣）
+    currentShippingPriceSet {
+      shopMoney {
+        amount
+        currencyCode
+      }
+    }
+    # 交易流程信息
+    transactions {
+      id
+      kind
+      status
+      gateway
+      formattedGateway
+      paymentId
+      createdAt
+      processedAt
+      amountSet {
+        shopMoney {
+          amount
+          currencyCode
+        }
+      }
+    }
+    discountApplications(first: 20) {
+      edges {
+        node {
+          index
+          __typename
+          ... on DiscountCodeApplication {
+            code
+          }
+          value {
+            __typename
+            ... on PricingPercentageValue {
+              percentage
+            }
+            ... on MoneyV2 {
+              amount
+              currencyCode
+            }
+          }
+          ... on AutomaticDiscountApplication {
+            title
+          }
+          ... on ManualDiscountApplication {
+            title
+          }
+        }
+      }
+    }
+    shippingAddress {
+      name
+      phone
+      address1
+      address2
+      city
+      province
+      provinceCode
+      zip
+      country
+      countryCode
     }
     # 订单商品行 (取前50条)
     lineItems(first: 50) {
@@ -60,9 +153,30 @@ query($id: ID!, $collectionQuery: String) {
           title
           # 数量
           quantity
+          # 当前数量
+          currentQuantity
           # SKU
           sku
-          
+          # 行级原总价（已乘以数量）
+          originalTotalSet {
+            shopMoney {
+              amount
+              currencyCode
+            }
+          }
+          # 行级折扣后总价（已乘以数量）
+          discountedTotalSet(withCodeDiscounts: true) {
+            # 店铺默认币种 USD
+            shopMoney {
+              amount
+              currencyCode
+            }
+            # 支付币种
+            presentmentMoney {
+              amount
+              currencyCode
+            }
+          }
           # 变体标题 (快照，通常包含规格简写，如 "L / Red")
           variantTitle
           
@@ -82,7 +196,7 @@ query($id: ID!, $collectionQuery: String) {
             #   parentId
             # }
             # 产品系列 (Collection) - 匹配指定ID
-            collections(first: 50, query: $collectionQuery) {
+            collections(first: 50) {
               edges {
                 node {
                   id
@@ -105,6 +219,55 @@ query($id: ID!, $collectionQuery: String) {
             key
             value
           }
+          discountAllocations {
+            allocatedAmount {
+              amount
+              currencyCode
+            }
+            discountApplication {
+              index
+              __typename
+              ... on DiscountCodeApplication {
+                code
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+              ... on AutomaticDiscountApplication {
+                title
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+              ... on ManualDiscountApplication {
+                title
+                value {
+                  __typename
+                  ... on MoneyV2 {
+                    amount
+                    currencyCode
+                  }
+                  ... on PricingPercentageValue {
+                    percentage
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -124,13 +287,7 @@ async function fetchSingleOrder() {
   const shopUrl = SHOPIFY_STORE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const apiUrl = `https://${shopUrl}/admin/api/${SHOPIFY_API_VERSION || "2024-01"}/graphql.json`;
 
-  // 构造 collectionQuery
-  // 仅查询指定的 Collection ID
-  const targetCollectionIds = ["474551189822", "492919062846", "474667417918", "481652998462"];
-  const collectionQuery = targetCollectionIds.map((id) => `id:${id}`).join(" OR ");
-
   console.log(`🔍 正在查询订单: ${ORDER_ID}`);
-  console.log(`🔍 产品系列过滤条件: ${collectionQuery}`);
   console.log(`🌐 API URL: ${apiUrl}`);
 
   try {
@@ -140,7 +297,6 @@ async function fetchSingleOrder() {
         query: QUERY,
         variables: {
           id: ORDER_ID,
-          collectionQuery: collectionQuery,
         },
       },
       {
@@ -182,7 +338,8 @@ async function fetchSingleOrder() {
     //     }
     //   });
     // }
-
+    console.log("\n--- 订单备注note---", orderData?.note || "没得");
+    
     fs.writeFileSync(outputFile, JSON.stringify(orderData, null, 2), "utf8");
 
     console.log("✅ 查询成功！");
@@ -226,4 +383,3 @@ async function fetchSingleOrder() {
 }
 
 fetchSingleOrder();
-

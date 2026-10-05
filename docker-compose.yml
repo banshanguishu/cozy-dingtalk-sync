@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  cozy-dingtalk-sync:
+    image: 192.168.1.252:15000/cozy-dingtalk-sync:latest
+    container_name: cozy-dingtalk-sync
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+      - ./.global_last_sync_time:/app/.global_last_sync_time
+      - ./.global_refund_sync_time:/app/.global_refund_sync_time
+      - ./.global_refund_scan_time:/app/.global_refund_scan_time
+      - ./.global_exchange_rate_cache:/app/.global_exchange_rate_cache

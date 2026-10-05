@@ -3,10 +3,12 @@ node_modules/
 
 # 环境变量 (包含敏感信息)
 .env
+.env.test.local
 
 # 运行时输出文件
 output/
 *.log
+!codex.log
 
 # 便携式环境目录
 bin/
@@ -19,4 +21,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code: 仅忽略 .local. 结尾的个人本地配置（settings.local.json 等），
+# 共享配置（settings.json / skills/ / agents/ / commands/）随 repo 进版本管理
+.claude/**/*.local.*
+
 .prod.*
+
+# webhook文件
+webhook.*
