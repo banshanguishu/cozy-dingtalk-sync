@@ -22,5 +22,6 @@
   "hub": "string",
   "roomDescription": "string",
   "discountCode": "string",
+  "discountAmount": "number",
   "source": "string"
 }

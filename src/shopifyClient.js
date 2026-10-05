@@ -179,9 +179,11 @@ function buildQuery(queryFilter, afterCursor, sortKey = "CREATED_AT") {
                     value
                   }
                   discountAllocations {
-                    allocatedAmount {
-                      amount
-                      currencyCode
+                    allocatedAmountSet {
+                      shopMoney {
+                        amount
+                        currencyCode
+                      }
                     }
                     discountApplication {
                       index

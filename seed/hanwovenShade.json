@@ -12,6 +12,7 @@
     "quantity": "number",
     "collection": "string",
     "discountCode": "string",
+    "discountAmount": "number",
     "color": "string",
     "liftType": "string",
     "cordColor": "string",

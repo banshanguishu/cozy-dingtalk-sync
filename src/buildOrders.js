@@ -84,15 +84,34 @@ const extractLineItemDiscountCodes = (node) => {
     .filter(Boolean);
 };
 
+const roundTo2 = (num) => {
+  const n = Number(num);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+};
+
+/* lineItem 实际分到的优惠金额合计：Shopify 已把专属折扣和整单折扣（含 Manual）都分摊到 discountAllocations，整行（含数量）口径；
+   优先取 allocatedAmountSet，回退已弃用的 allocatedAmount 以兼容旧查询 */
+const getLineItemDiscountAmount = (node) => {
+  const allocations = Array.isArray(node?.discountAllocations) ? node.discountAllocations : [];
+  const total = allocations.reduce((sum, item) => {
+    const amount = Number(item?.allocatedAmountSet?.shopMoney?.amount ?? item?.allocatedAmount?.amount);
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+  return roundTo2(total);
+};
+
 /* 根据type类型构造不同三级订单子项，所要呈现的字段内容不同 */
 const buildThirdItem = (type, customAttributes, node) => {
   if (!COLLECTION_TYPE_NAMES_DEV.includes(type)) return null;
   const itemDiscountCodes = extractLineItemDiscountCodes(node);
   const discountCode = itemDiscountCodes.length > 0 ? [...new Set(itemDiscountCodes)].join(";") : "/";
+  const discountAmount = getLineItemDiscountAmount(node);
   if (type === "drapery") {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/", // collection name
       discountCode,
+      discountAmount,
       color: customAttributes["Color"] || customAttributes["Color & Code"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Single Panel Order Width (inch)"], customAttributes["Width Fraction (optional)"]),
       // 两个基础值至少一个有值时按原逻辑求和；都为空时回退取 Length (inch)
@@ -117,6 +136,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
+      discountAmount,
       color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       width: calculateDimension(customAttributes["Shade Width (inch)"], customAttributes["Width Fraction (optional)"]),
       length: calculateDimension(customAttributes["Shade Length (inch)"], customAttributes["Length Fraction (optional)"]),
@@ -152,6 +172,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       productName: node.title || node.product?.title || "/",
       discountCode,
+      discountAmount,
       colorSku: getShopifyOwnVariant("Color"),
       sizeSku: getShopifyOwnVariant("Length (inch)"),
       capStyle: getShopifyOwnVariant("Cap Style"),
@@ -176,6 +197,7 @@ const buildThirdItem = (type, customAttributes, node) => {
     return {
       collection: getSplitNameFirst(customAttributes["Collection"] || node.product.title || node.title) || "/",
       discountCode,
+      discountAmount,
       color: customAttributes["Color"] || (node.variantTitle || "").trim() || "/",
       liftType: customAttributes["Lift Type"] || "/",
       cordColor: customAttributes["Cord Color"] || "/",
@@ -204,11 +226,13 @@ const buildThirdItem = (type, customAttributes, node) => {
       hub: customAttributes["Select Connect"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
       discountCode,
+      discountAmount,
     };
   } else if (type === "others") {
     return {
       productName: node.title || node.product?.title || "/",
       discountCode,
+      discountAmount,
     };
   }
 };
@@ -317,12 +341,6 @@ const isRemoved = (node) => {
   return false;
 };
 
-const roundTo2 = (num) => {
-  const n = Number(num);
-  if (!Number.isFinite(n)) return 0;
-  return Math.round((n + Number.EPSILON) * 100) / 100;
-};
-
 const getGiftCardDeductionAmount = (order) => {
   const transactions = Array.isArray(order?.transactions) ? order.transactions : [];
   if (transactions.length === 0) return 0;
@@ -390,6 +408,7 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         if (!groupedByCollection[groupKey]) {
           groupedByCollection[groupKey] = {
             originalTotalPrice: 0,
+            discountedTotalPrice: 0,
             totalPrice: 0,
             productNames: [],
             discountCodes: new Set(),
@@ -397,7 +416,11 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         }
 
         const originAmount = Number(node?.originalTotalSet?.shopMoney?.amount);
-        if (!Number.isNaN(originAmount)) groupedByCollection[groupKey].originalTotalPrice += originAmount;
+        if (!Number.isNaN(originAmount)) {
+          groupedByCollection[groupKey].originalTotalPrice += originAmount;
+          // 实际折后价：原价 - Shopify 分到该 lineItem 的全部折扣（专属折扣 + 整单折扣）
+          groupedByCollection[groupKey].discountedTotalPrice += originAmount - getLineItemDiscountAmount(node);
+        }
         if (node?.title) groupedByCollection[groupKey].productNames.push(node.title);
         // 折扣码按 lineItem 收集到本组 Set，输出时去重 join——每组一条记录、每组独立的折扣码集合
         for (const code of extractLineItemDiscountCodes(node)) {
@@ -405,7 +428,9 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
         }
       }
 
-      // 新规则：先按“订单商品总价池（订单总价 - 运费 - 礼品卡抵扣 - Tip）”按类别原总价比例分摊折后价
+      // 金额规则：各类别折后价先取组内商品的实际折后价（专属折扣、整单折扣均以 Shopify 分摊到 lineItem 的金额为准），
+      // 再把“订单商品总价池（订单总价 - 运费 - 礼品卡抵扣 - Tip）”与实际折后价合计的差额（礼品卡抵扣等）按折后价占比分摊，
+      // 保证各类别合计仍等于商品总价池
       const orderTotalPrice = Number(o?.totalPriceSet?.shopMoney?.amount);
       // 折后运费：客户实际支付的运费，与 totalPriceSet 同口径，用于分摊和样品 totalPrice 加挂
       const shipFee = Number(o?.currentShippingPriceSet?.shopMoney?.amount);
@@ -422,42 +447,40 @@ const buildSecondOrders = (orders, type = "secondary_order", usdToRmbRate = null
 
       const groupedEntries = Object.entries(groupedByCollection);
       const allocatableEntries = groupedEntries.filter(([key]) => key !== SECOND_TIP_GROUP_KEY);
-      const orderOriginalTotalSum = allocatableEntries.reduce((sum, [, item]) => {
-        const original = Number(item?.originalTotalPrice);
-        return Number.isFinite(original) ? sum + original : sum;
-      }, 0);
+      const hasSwatchesGroup = Object.hasOwn(groupedByCollection, FREE_SWATCHES_COLLECTION_ID);
 
-      const positiveOriginalEntries = allocatableEntries.filter(([, item]) => (Number(item?.originalTotalPrice) || 0) > 0);
-
-      // 初始化各类别 totalPrice：Tip 组直接等于 originalTotalPrice，其余先置 0，符合“原总价为0则折后价直接为0”
+      // 初始化各类别 totalPrice：Tip 组直接等于 originalTotalPrice，其余先取实际折后价
       for (const [key, item] of groupedEntries) {
-        if (key === SECOND_TIP_GROUP_KEY) {
-          item.totalPrice = roundTo2(Number(item.originalTotalPrice) || 0);
-        } else {
-          item.totalPrice = 0;
-        }
+        item.totalPrice = key === SECOND_TIP_GROUP_KEY ? roundTo2(Number(item.originalTotalPrice) || 0) : roundTo2(item.discountedTotalPrice);
       }
 
-      if (orderOriginalTotalSum > 0 && positiveOriginalEntries.length > 0) {
-        let allocatedGoodsTotal = 0;
-        const lastIdx = positiveOriginalEntries.length - 1;
+      // 待分摊差额：商品总价池 - 实际折后价合计；无样品组时运费没有挂靠的类别，一并按折后价占比分摊，保证二级合计与订单总价口径一致
+      const discountedGoodsTotal = allocatableEntries.reduce((sum, [, item]) => sum + item.totalPrice, 0);
+      const sharedAmount = roundTo2(goodsTotalPrice - discountedGoodsTotal + (hasSwatchesGroup ? 0 : safeShipFee));
 
-        for (let i = 0; i < positiveOriginalEntries.length; i++) {
-          const [, item] = positiveOriginalEntries[i];
-          const original = Number(item.originalTotalPrice) || 0;
+      // 分摊权重优先取折后价；折后价全为 0 时退回原总价；都为 0 时不分摊（与旧逻辑一致，避免差额整笔挂到某个 0 元类别）
+      const weightOf = allocatableEntries.some(([, item]) => item.totalPrice > 0)
+        ? (item) => Math.max(item.totalPrice, 0)
+        : (item) => Math.max(Number(item.originalTotalPrice) || 0, 0);
+      const targetEntries = allocatableEntries.filter(([, item]) => weightOf(item) > 0);
 
-          if (i === lastIdx) {
-            item.totalPrice = roundTo2(goodsTotalPrice - allocatedGoodsTotal);
-          } else {
-            const shared = roundTo2((goodsTotalPrice * original) / orderOriginalTotalSum);
-            item.totalPrice = shared;
-            allocatedGoodsTotal += shared;
-          }
+      if (sharedAmount !== 0 && targetEntries.length > 0) {
+        // 先固化权重，避免循环中 totalPrice 被累加后影响后续权重
+        const weights = targetEntries.map(([, item]) => weightOf(item));
+        const weightSum = weights.reduce((sum, w) => sum + w, 0);
+        const lastIdx = targetEntries.length - 1;
+        let allocatedShared = 0;
+
+        for (let i = 0; i < targetEntries.length; i++) {
+          const [, item] = targetEntries[i];
+          const shared = i === lastIdx ? roundTo2(sharedAmount - allocatedShared) : roundTo2((sharedAmount * weights[i]) / weightSum);
+          item.totalPrice = roundTo2(item.totalPrice + shared);
+          allocatedShared += shared;
         }
       }
 
       // 分摊完成后，运费特殊加在样品类别（free swatches）上
-      if (Object.hasOwn(groupedByCollection, FREE_SWATCHES_COLLECTION_ID)) {
+      if (hasSwatchesGroup) {
         const swatchesGroup = groupedByCollection[FREE_SWATCHES_COLLECTION_ID];
         // 折后运费加入样品组 totalPrice（客户实际支付的运费）
         if (Number.isFinite(shipFee)) {

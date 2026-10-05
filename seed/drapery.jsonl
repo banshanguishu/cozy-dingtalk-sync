@@ -10,6 +10,7 @@
     "quantity": "number",
     "collection": "string",
     "discountCode": "string",
+    "discountAmount": "number",
     "color": "string",
     "width": "number",
     "length": "number",

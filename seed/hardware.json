@@ -12,6 +12,7 @@
   "quantity": "number",
   "productName": "string",
   "discountCode": "string",
+  "discountAmount": "number",
   "colorSku": "number",
   "sizeSku": "number",
   "capStyle": "string",

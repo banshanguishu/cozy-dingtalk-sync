@@ -118,9 +118,11 @@ query($id: ID!) {
             value
           }
           discountAllocations {
-            allocatedAmount {
-              amount
-              currencyCode
+            allocatedAmountSet {
+              shopMoney {
+                amount
+                currencyCode
+              }
             }
             discountApplication {
               index
