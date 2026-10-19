@@ -162,7 +162,7 @@ const buildThirdItem = (type, customAttributes, node) => {
       controlMethod: customAttributes["Control Method"] || getShopifyOwnVariant("Control Method") || "/",
       holdbackStyle: customAttributes["Holdback Style"] || "/",
       mountingType: customAttributes["Mounting Type"] || "/",
-      rings: customAttributes["Rings"] || "/",
+      rings: customAttributes["Rings Included"] || customAttributes["Rings"] || "/",
       bendPositions: customAttributes["Corner Angle"] || customAttributes["Corner Style"] || customAttributes["Bend Position(s)"] || "/",
       panelConfiguration: customAttributes["Panel Configuration"] || "/",
       roomDescription: customAttributes["Room Description (Optional)"] || "/",
